@@ -430,7 +430,9 @@ query: `direction=INCOMING|OUTGOING` · `status=OPEN|ANSWERED|CLOSED`
 | `INVALID_BODY` | 400 | zod 검증 실패. `details` 에 필드별 사유 |
 | `NO_PARTNER` | 409 | 파트너 팀 연결 전인데 보드/요청을 시도 |
 | `NOTION_NOT_CONNECTED` | 409 | Notion 토큰/DB 미등록 |
-| `NOTION_ERROR` | 4xx/502 | Notion 이 준 메시지가 `message` 에 그대로 |
+| `NOTION_AUTH_FAILED` | **400** | 토큰이 틀렸거나 integration 을 DB 에 초대 안 함. (401 로 안 내려갑니다 — 로그인 풀림과 헷갈리지 마세요) |
+| `NOTION_NOT_FOUND` | **400** | databaseId 가 틀림 |
+| `NOTION_ERROR` | 502 | 그 외 Notion 장애. 메시지가 `message` 에 그대로 |
 | `AI_DISABLED` | 503 | ANTHROPIC_API_KEY 없음 |
 | `NO_ACTIONS` | 422 | AI 가 뽑을 액션을 못 찾음 |
 | `SENDER_ONLY` / `RECEIVER_ONLY` | 403 | 보드 상태 전이 권한 |

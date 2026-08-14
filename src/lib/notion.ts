@@ -63,7 +63,27 @@ async function notionFetch(
   if (!res.ok) {
     const message =
       (body as { message?: string }).message ?? `Notion API 오류 (${res.status})`;
-    throw new ApiError(res.status === 401 ? 401 : 502, "NOTION_ERROR", message, body);
+
+    // Notion 이 준 401/403 을 그대로 흘리면 안 된다.
+    // 프론트 공통 핸들러가 401 을 "로그인 풀림"으로 읽고 /login 으로 튕겨버려서,
+    // 사용자는 "토큰이 틀렸다"는 사실을 영영 못 본다. 우리 인증과 무관한 실패이므로 400.
+    if (res.status === 401 || res.status === 403) {
+      throw new ApiError(
+        400,
+        "NOTION_AUTH_FAILED",
+        "Notion 토큰이 잘못됐거나, integration 을 해당 데이터베이스에 초대하지 않았습니다.",
+        body,
+      );
+    }
+    if (res.status === 404) {
+      throw new ApiError(
+        400,
+        "NOTION_NOT_FOUND",
+        "Notion 데이터베이스를 찾을 수 없습니다. databaseId 를 확인하고, 그 페이지에 integration 을 초대했는지 보세요.",
+        body,
+      );
+    }
+    throw new ApiError(502, "NOTION_ERROR", message, body);
   }
   return body as Record<string, unknown>;
 }

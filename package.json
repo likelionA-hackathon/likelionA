@@ -10,6 +10,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma db push --force-reset && npm run db:seed",
     "db:studio": "prisma studio",
+    "smoke": "node scripts/smoke.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
