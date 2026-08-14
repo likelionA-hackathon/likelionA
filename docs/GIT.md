@@ -19,7 +19,8 @@ npm install
 
 # .env 만들기 (Windows PowerShell 은 copy)
 cp .env.example .env
-# → DATABASE_URL 을 팀방에 공유된 값으로 채우세요. 각자 만들지 마세요.
+# → DATABASE_URL 과 DIRECT_URL 을 팀방에 공유된 값으로 채우세요.
+#   두 개 다 필요합니다. 각자 만들지 마세요.
 
 npx prisma db push
 npm run db:seed

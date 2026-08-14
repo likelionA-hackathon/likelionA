@@ -23,7 +23,10 @@ const devBypassEnabled = () => process.env.DEV_AUTH_BYPASS === "true";
  * 배포 전에 DEV_AUTH_BYPASS 를 반드시 끌 것.
  */
 export async function getCurrentUser(req?: Request): Promise<CurrentUser | null> {
-  const session = await auth().catch(() => null);
+  // AUTH_SECRET 이 없으면 NextAuth 가 MissingSecret 을 던진다.
+  // 로그인이 붙기 전에는 아예 호출하지 않아 콘솔을 깨끗하게 유지한다.
+  const authConfigured = Boolean(process.env.AUTH_SECRET);
+  const session = authConfigured ? await auth().catch(() => null) : null;
   const email = session?.user?.email ?? null;
 
   if (email) {

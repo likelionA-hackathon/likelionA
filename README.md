@@ -27,14 +27,33 @@ npm run dev
 
 `http://localhost:3000/api/me` 가 JSON 을 뱉으면 성공입니다.
 
-### DATABASE_URL 만드는 법 (Neon, 2분)
+### Neon DB 만들기 (3분) — 한 명만 하고 팀에 공유
 
-1. https://console.neon.tech 가입 (GitHub 로그인)
-2. Create project → 리전은 아무거나
-3. Connection string 복사 → `.env` 의 `DATABASE_URL` 에 붙여넣기
-4. 팀원 전원이 **같은 문자열**을 씁니다. 각자 DB 만들면 화면 붙일 때 데이터가 안 맞습니다.
+1. https://console.neon.tech → GitHub 로그인
+2. **Create project** → 리전은 `Asia Pacific (Singapore)` (한국에서 가장 가까움)
+3. 프로젝트 화면에서 **Connect** 버튼 → 다이얼로그가 뜸
+4. **문자열을 두 개** 복사합니다. 같은 다이얼로그에서 체크박스 하나만 바꾸면 됩니다.
 
----
+   | .env 변수 | Connection pooling | 호스트 모양 | 누가 씀 |
+   |---|---|---|---|
+   | `DATABASE_URL` | **체크** | `ep-xxxx-`**`pooler`**`.…` | 앱 런타임 |
+   | `DIRECT_URL` | 체크 해제 | `ep-xxxx.…` | `prisma db push`, seed |
+
+5. 두 값을 `.env` 에 넣고, **팀방에 그대로 공유**합니다.
+   각자 만들면 워크스페이스 id 가 달라져서 화면 붙일 때 데이터가 안 맞습니다.
+
+```bash
+npx prisma db push   # 스키마를 DB 에 생성
+npm run db:seed      # 데모 데이터 심기
+npm run dev
+```
+
+> **알아둘 것 — 5분 쉬면 DB 가 잠듭니다.**
+> Neon 무료 플랜은 5분 유휴 후 컴퓨트를 0으로 내립니다(끌 수 없음).
+> 그래서 한동안 안 쓰다가 첫 요청을 보내면 1초 정도 걸립니다. **버그가 아닙니다.**
+> **데모 직전에 아무 API 나 한 번 찔러서 깨워두세요.** 무대에서 첫 클릭이 느리면 흐름이 끊깁니다.
+>
+> 무료 플랜: 프로젝트당 스토리지 0.5GB · 월 100 CU-hours. 우리 규모로는 남습니다.
 
 ## 팀원별 시작 지점
 
@@ -148,6 +167,9 @@ npm run db:studio  # Prisma Studio 로 데이터 눈으로 보기
 | 증상 | 원인 |
 |---|---|
 | `PrismaClientInitializationError` | `DATABASE_URL` 없음 또는 `npx prisma db push` 안 함 |
+| `prepared statement "s0" already exists` | 풀러 이슈. `DATABASE_URL` 뒤에 `&pgbouncer=true` 붙이기 |
+| 첫 요청만 1초 넘게 걸림 | Neon 이 자다 깨는 중. 정상. 두 번째부터 빠릅니다 |
+| `db push` 가 멈춘 채 안 끝남 | `DIRECT_URL` 에 `-pooler` 가 붙은 걸 넣었을 가능성. 빼야 합니다 |
 | `Cannot find module '.prisma/client'` | `npx prisma generate` (또는 `npm install` 다시) |
 | API 가 401 | `DEV_AUTH_BYPASS="true"` 인지, `x-baton-user` 이메일이 seed 에 있는 값인지 |
 | API 가 403 `NOT_A_MEMBER` | 그 사용자가 그 워크스페이스 멤버가 아님. `/api/me` 로 내 워크스페이스 id 확인 |

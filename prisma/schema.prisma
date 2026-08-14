@@ -16,7 +16,10 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // 앱 런타임: Neon 커넥션 풀러 (호스트에 -pooler 붙은 것)
+  url       = env("DATABASE_URL")
+  // prisma db push / migrate 는 직접 연결이 필요하다 (-pooler 없는 것)
+  directUrl = env("DIRECT_URL")
 }
 
 // ─────────────────────────────────────────────────────────────
