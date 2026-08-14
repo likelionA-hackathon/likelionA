@@ -1,0 +1,381 @@
+// Baton — 파트너 팀 간 인수인계 허브
+// 스키마 담당: 백지우
+//
+// 큰 그림:
+//   Workspace  = 하나의 팀. 사용자는 Membership 으로 소속된다.
+//   Link       = 두 Workspace 를 잇는 파트너 관계. 인수인계/공유보드/요청은 전부 이 Link 위에서 일어난다.
+//   Connection = Workspace 가 붙인 외부 도구 (Notion 은 실연동, Jira 는 목데이터).
+//   HandoverItem = Notion 원본 1건 → AI 가 요약/변경사항/맥락/추가확인 으로 가공한 인수인계 카드.
+//   NextAction = 인수인계에서 파생된(또는 수기로 추가한) 우리 팀의 할 일.
+//   BoardItem  = 상대 팀에게 전달한 공유보드 항목. Jira write 는 없고 payload 미리보기까지만.
+//   Request    = "이거 좀 더 알려주세요" 정보요청 플래그. 배지 카운트의 소스.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// 인증 (NextAuth v5 / @auth/prisma-adapter 호환 형태)
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  accounts     Account[]
+  sessions     Session[]
+  memberships  Membership[]
+  acknowledged HandoverItem[] @relation("AcknowledgedBy")
+  createdLinks Link[]         @relation("LinkCreatedBy")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 워크스페이스 / 파트너 연결
+// ─────────────────────────────────────────────────────────────
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  // 대시보드 상단에 쓰는 한 줄 소개 ("결제팀 · 백엔드")
+  tagline   String?
+  createdAt DateTime @default(now())
+
+  members       Membership[]
+  connections   Connection[]
+  handoverItems HandoverItem[]
+  nextActions   NextAction[]
+
+  linksAsA Link[] @relation("LinkWorkspaceA")
+  linksAsB Link[] @relation("LinkWorkspaceB")
+
+  boardItemsSent     BoardItem[] @relation("BoardFrom")
+  boardItemsReceived BoardItem[] @relation("BoardTo")
+  requestsSent       Request[]   @relation("RequestFrom")
+  requestsReceived   Request[]   @relation("RequestTo")
+}
+
+enum MemberRole {
+  OWNER
+  MEMBER
+}
+
+model Membership {
+  id          String     @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        MemberRole @default(MEMBER)
+  createdAt   DateTime   @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+enum LinkStatus {
+  PENDING // 초대 코드는 발급됐지만 상대가 아직 수락 안 함
+  ACTIVE
+  REVOKED
+}
+
+/// 두 워크스페이스의 파트너 관계. inviteCode 하나로 초대/수락을 처리한다.
+/// workspaceBId 는 수락 전까지 null.
+model Link {
+  id           String     @id @default(cuid())
+  workspaceAId String
+  workspaceBId String?
+  status       LinkStatus @default(PENDING)
+  inviteCode   String     @unique
+  createdById  String?
+  createdAt    DateTime   @default(now())
+  acceptedAt   DateTime?
+
+  workspaceA Workspace  @relation("LinkWorkspaceA", fields: [workspaceAId], references: [id], onDelete: Cascade)
+  workspaceB Workspace? @relation("LinkWorkspaceB", fields: [workspaceBId], references: [id], onDelete: Cascade)
+  createdBy  User?      @relation("LinkCreatedBy", fields: [createdById], references: [id])
+
+  handoverItems HandoverItem[]
+  boardItems    BoardItem[]
+  requests      Request[]
+
+  @@index([workspaceAId])
+  @@index([workspaceBId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 외부 도구 연결
+// ─────────────────────────────────────────────────────────────
+
+enum ConnectionProvider {
+  NOTION
+  JIRA
+  SLACK
+}
+
+enum ConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  MOCK // 데모용 목데이터 (Jira)
+}
+
+model Connection {
+  id           String             @id @default(cuid())
+  workspaceId  String
+  provider     ConnectionProvider
+  status       ConnectionStatus   @default(DISCONNECTED)
+  displayName  String?
+  /// Notion: { token, databaseId }  /  Jira: { site, projectKey } (목)
+  /// 토큰은 해커톤 편의상 여기에 둔다. 실서비스면 암호화 필요.
+  config       Json               @default("{}")
+  lastSyncedAt DateTime?
+  lastError    String?
+  createdAt    DateTime           @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, provider])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 인수인계
+// ─────────────────────────────────────────────────────────────
+
+enum Priority {
+  URGENT // 긴급
+  HIGH // 높음
+  NORMAL // 보통
+  LOW // 낮음
+}
+
+enum HandoverStatus {
+  NEW // 아직 안 봄 → 대시보드 배지
+  ACKNOWLEDGED // "확인" 버튼 누름
+  ARCHIVED
+}
+
+/// Notion 페이지 1건 = HandoverItem 1건.
+/// rawContent 는 Notion 에서 긁어온 원문, 나머지 summary/changes/... 는 AI 산출물.
+model HandoverItem {
+  id          String  @id @default(cuid())
+  workspaceId String
+  /// 어느 파트너 관계로 들어온 인수인계인지 (없으면 우리 팀 내부 문서)
+  linkId      String?
+
+  sourceProvider ConnectionProvider @default(NOTION)
+  /// Notion page id
+  sourceRef      String?
+  sourceUrl      String?
+  /// Notion 페이지 마지막 수정 시각. 재동기화 판단에 씀.
+  sourceEditedAt DateTime?
+
+  title      String
+  author     String?
+  rawContent String @db.Text
+
+  // ── AI 산출물 ────────────────────────────────
+  /// 3~5줄 요약
+  summary       String?  @db.Text
+  /// [{ "type": "added|changed|removed", "text": "...", "impact": "..." }]
+  changes       Json?
+  /// 왜 이 일이 있는지 / 배경
+  workContext   String?  @db.Text
+  /// [{ "question": "...", "why": "..." }]  — 받는 쪽이 되물어야 할 것들
+  openQuestions Json?
+  aiModel       String?
+  aiGeneratedAt DateTime?
+
+  // ── 우선순위 ─────────────────────────────────
+  /// 원본에 적힌 표현 그대로 ("Critical", "P0", "asap", "🔥")
+  rawPriority String?
+  /// 정규화 결과
+  priority    Priority @default(NORMAL)
+  /// AI 가 왜 그렇게 매겼는지 한 줄
+  priorityReason String?
+
+  status           HandoverStatus @default(NEW)
+  acknowledgedAt   DateTime?
+  acknowledgedById String?
+
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  link           Link?     @relation(fields: [linkId], references: [id], onDelete: SetNull)
+  acknowledgedBy User?     @relation("AcknowledgedBy", fields: [acknowledgedById], references: [id])
+
+  nextActions NextAction[]
+  requests    Request[]
+
+  @@unique([workspaceId, sourceProvider, sourceRef])
+  @@index([workspaceId, status])
+  @@index([workspaceId, priority])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 다음 업무
+// ─────────────────────────────────────────────────────────────
+
+enum ActionStatus {
+  TODO
+  DOING
+  DONE
+}
+
+enum ActionOrigin {
+  AI // 인수인계에서 자동 생성
+  MANUAL // 사람이 추가
+}
+
+model NextAction {
+  id             String  @id @default(cuid())
+  workspaceId    String
+  handoverItemId String?
+
+  title       String
+  description String?      @db.Text
+  assignee    String?
+  status      ActionStatus @default(TODO)
+  priority    Priority     @default(NORMAL)
+  dueDate     DateTime?
+  origin      ActionOrigin @default(MANUAL)
+  /// AI 초안을 사람이 아직 안 본 상태인지. 화면에서 "AI 초안" 뱃지로 씀.
+  aiDraft     Boolean      @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  handoverItem HandoverItem? @relation(fields: [handoverItemId], references: [id], onDelete: SetNull)
+  boardItems   BoardItem[]
+
+  @@index([workspaceId, status])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 공유보드
+// ─────────────────────────────────────────────────────────────
+
+enum BoardItemStatus {
+  DRAFT // 전달 미리보기만 띄운 상태
+  SHARED // 상대 팀 보드에 올라감
+  ACCEPTED // 상대가 받아서 자기 NextAction 으로 가져감
+  DECLINED
+}
+
+/// 우리 팀이 상대 팀에게 넘긴 업무 카드.
+/// targetPayload 는 "Jira 로 보낸다면 이렇게 보낼 것" 미리보기 JSON (실제 write 없음).
+model BoardItem {
+  id              String  @id @default(cuid())
+  linkId          String
+  fromWorkspaceId String
+  toWorkspaceId   String
+  nextActionId    String?
+
+  title    String
+  body     String?         @db.Text
+  priority Priority        @default(NORMAL)
+  status   BoardItemStatus @default(DRAFT)
+
+  targetSystem  ConnectionProvider @default(JIRA)
+  /// { "project": "PAY", "issueType": "Task", "summary": "...", "description": "...", "labels": [...] }
+  targetPayload Json?
+
+  sharedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  link          Link        @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  fromWorkspace Workspace   @relation("BoardFrom", fields: [fromWorkspaceId], references: [id], onDelete: Cascade)
+  toWorkspace   Workspace   @relation("BoardTo", fields: [toWorkspaceId], references: [id], onDelete: Cascade)
+  nextAction    NextAction? @relation(fields: [nextActionId], references: [id], onDelete: SetNull)
+
+  requests Request[]
+
+  @@index([linkId])
+  @@index([toWorkspaceId, status])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 정보요청 (알림 배지)
+// ─────────────────────────────────────────────────────────────
+
+enum RequestStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+/// "이 인수인계 이 부분 좀 더 설명해 주세요" 요청.
+/// toWorkspace 쪽 대시보드에서 빨간 배지로 카운트된다.
+model Request {
+  id              String  @id @default(cuid())
+  linkId          String?
+  fromWorkspaceId String
+  toWorkspaceId   String
+  handoverItemId  String?
+  boardItemId     String?
+
+  question  String        @db.Text
+  answer    String?       @db.Text
+  status    RequestStatus @default(OPEN)
+  createdBy String?
+
+  createdAt  DateTime  @default(now())
+  answeredAt DateTime?
+
+  link          Link?         @relation(fields: [linkId], references: [id], onDelete: SetNull)
+  fromWorkspace Workspace     @relation("RequestFrom", fields: [fromWorkspaceId], references: [id], onDelete: Cascade)
+  toWorkspace   Workspace     @relation("RequestTo", fields: [toWorkspaceId], references: [id], onDelete: Cascade)
+  handoverItem  HandoverItem? @relation(fields: [handoverItemId], references: [id], onDelete: Cascade)
+  boardItem     BoardItem?    @relation(fields: [boardItemId], references: [id], onDelete: Cascade)
+
+  @@index([toWorkspaceId, status])
+}
