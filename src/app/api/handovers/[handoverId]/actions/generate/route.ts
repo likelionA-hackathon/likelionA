@@ -36,6 +36,10 @@ export const POST = handler(async (req: Request, ctx: Ctx) => {
     summary: item.summary,
     workContext: item.workContext,
     rawContent: item.rawContent,
+    // 요약 단계에서 뽑아둔 '추가확인'을 같이 넘겨 중복 액션을 막는다.
+    openQuestions: Array.isArray(item.openQuestions)
+      ? (item.openQuestions as Array<{ question: string }>)
+      : null,
   });
 
   if (drafts.length === 0) {
