@@ -1,7 +1,8 @@
 # Baton
 
 > https://github.com/likelionA-hackathon/likelionA
-> 깃이 처음이면 **[`docs/GIT.md`](docs/GIT.md)** 를 먼저 읽으세요.
+> 처음 오셨으면 **[`docs/ONBOARDING.md`](docs/ONBOARDING.md)** 부터 읽으세요.
+> 깃이 처음이면 **[`docs/GIT.md`](docs/GIT.md)** 도 같이.
 
 팀 간 인수인계 허브. Notion 에 흩어진 인수인계 문서를 AI 가 정리하고,
 파트너 팀과 다음 업무·공유보드로 이어줍니다.
@@ -10,7 +11,7 @@
 - DB: PostgreSQL (Neon/Supabase) + Prisma
 - 인증: NextAuth v5 (Google OAuth)
 - 연동: Notion REST (실연동) · Jira (목데이터)
-- AI: Claude API
+- AI: Gemini(무료 티어) 또는 Claude — `.env` 로 전환
 
 ---
 
@@ -120,6 +121,27 @@ curl -X POST http://localhost:3000/api/workspaces/<워크스페이스ID>/notion/
 property 이름은 `우선순위/priority/중요도/긴급도`, `담당자/작성자/assignee/owner` 중 아무거나 인식합니다.
 
 ---
+
+## AI 붙이기 (백지우) — 무료로
+
+`GEMINI_API_KEY` 하나만 넣으면 됩니다. **카드 등록 불필요.**
+
+1. https://aistudio.google.com/apikey → **Create API key**
+2. `.env` 의 `GEMINI_API_KEY` 에 붙여넣기
+
+```
+GEMINI_API_KEY="AIza..."
+GEMINI_MODEL="gemini-3.5-flash"
+```
+
+키가 둘 다 있으면 `LLM_PROVIDER="gemini"` 또는 `"anthropic"` 로 고릅니다.
+비워두면 있는 키를 자동으로 씁니다.
+
+> 무료 티어는 입력 내용이 Google 제품 개선에 사용됩니다.
+> 우리 데모 데이터는 전부 가짜라 상관없지만, 실제 회사 문서로는 쓰지 마세요.
+
+품질이 아쉬우면 `src/lib/claude.ts` 의 `SUMMARY_SYSTEM` 만 고치면 됩니다.
+모델 전환은 `src/lib/llm.ts` 한 파일에 격리되어 있습니다.
 
 ## Google OAuth 붙이기 (전철우)
 

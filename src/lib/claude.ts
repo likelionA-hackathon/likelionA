@@ -1,6 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { Priority } from "@prisma/client";
+import { askJson } from "@/lib/llm";
 import { normalizePriority } from "@/lib/priority";
+
+export { isAiEnabled, currentModel, getProvider } from "@/lib/llm";
 
 /**
  * AI 로직 3종 (백지우)
@@ -8,58 +10,9 @@ import { normalizePriority } from "@/lib/priority";
  *  2) resolvePriorityWithAI : 규칙으로 못 맞춘 우선순위 표기를 4단계로 정규화
  *  3) generateNextActions   : 인수인계 내용에서 우리 팀이 할 일 초안 뽑기
  *
- * 구조화 출력은 tool-use 대신 "JSON 만 뱉게 시키고 assistant 턴을 '{' 로 프리필" 하는 방식.
- * 모델이 서두를 붙이는 사고를 원천 차단해서 파싱이 안정적이다.
+ * 어느 모델로 보낼지는 lib/llm.ts 가 정한다 (Gemini 무료 티어 / Claude).
+ * 이 파일은 "무엇을 시킬지"만 담당한다 — 프롬프트를 고칠 곳은 여기다.
  */
-
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001";
-
-let client: Anthropic | null = null;
-function getClient() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-  if (!client) client = new Anthropic({ apiKey });
-  return client;
-}
-
-export function isAiEnabled() {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
-}
-
-async function askJson<T>(system: string, userPrompt: string, maxTokens = 2000): Promise<T | null> {
-  const anthropic = getClient();
-  if (!anthropic) return null;
-
-  const res = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: maxTokens,
-    system,
-    messages: [
-      { role: "user", content: userPrompt },
-      { role: "assistant", content: "{" },
-    ],
-  });
-
-  const block = res.content.find((c) => c.type === "text");
-  const raw = block && block.type === "text" ? block.text : "";
-  const jsonText = "{" + raw;
-
-  try {
-    return JSON.parse(jsonText) as T;
-  } catch {
-    // 모델이 뒤에 사족을 붙인 경우: 마지막 '}' 까지만 잘라서 재시도
-    const cut = jsonText.lastIndexOf("}");
-    if (cut > 0) {
-      try {
-        return JSON.parse(jsonText.slice(0, cut + 1)) as T;
-      } catch {
-        /* fallthrough */
-      }
-    }
-    console.error("[claude] JSON 파싱 실패:", jsonText.slice(0, 400));
-    return null;
-  }
-}
 
 // ─────────────────────────────────────────────────────────────
 // 1) 인수인계 요약
@@ -87,22 +40,76 @@ export type HandoverSummary = {
 
 const SUMMARY_SYSTEM = `당신은 팀 간 업무 인수인계를 정리하는 시니어 PM 입니다.
 
-앞 팀이 쓴 문서를 받아서, 뒤를 이어받는 팀이 "읽자마자 뭘 해야 할지 아는" 상태로 만드는 것이 목표입니다.
+앞 팀이 급하게 쓴 문서를 받아, 뒤를 이어받는 팀이 "읽자마자 뭘 해야 할지 아는" 상태로 만듭니다.
 
-원칙:
-- 원문에 없는 사실을 지어내지 마세요. 모르면 openQuestions 로 넘기세요.
-- 요약은 "무엇이 끝났고 / 무엇이 남았고 / 무엇을 조심해야 하는지" 순서로.
-- changes 는 앞 팀이 바꿔놓아서 뒤 팀의 전제가 달라지는 것만 담으세요.
-  단순 진행 보고는 changes 가 아닙니다. impact 에는 "그래서 받는 쪽이 뭘 다시 확인해야 하는지"를 쓰세요.
-- openQuestions 는 원문만 봐서는 판단할 수 없어 되물어야 하는 것. 최대 4개. 없으면 빈 배열.
-- 모든 출력은 한국어. 존댓말 없이 간결한 개조식.
+## 절대 규칙
+- 원문에 없는 사실을 지어내지 마세요.
+- 모든 출력은 한국어. 개조식(~함, ~임)으로 간결하게.
+
+## summary (요약)
+- 4~5줄. 각 줄 40~70자. 줄바꿈은 \n.
+- 순서: (1) 끝난 것 → (2) 안 끝난 것 → (3) 받는 쪽이 조심할 것
+- **할 일 목록을 쓰지 마세요.** "~필요", "~해야 함" 을 나열하지 마세요.
+  액션 아이템은 별도 기능이 담당합니다. 여기는 "지금 상태"만 씁니다.
+- **한 줄에 한 가지만.** 여러 항목을 쉼표나 가운뎃점으로 묶지 마세요.
+  줄이 모자라면 덜 중요한 것을 버리세요. 압축해서 다 넣지 마세요.
+- 원문이 길수록 요약도 길어져야 합니다. 중요한 문서일수록 짧아지면 안 됩니다.
+
+## changes (변경사항)
+- **받는 쪽의 전제가 달라지는 것만.** 최대 5개.
+- 아래는 changes 가 아닙니다. 넣지 마세요.
+  · 단순 진행 보고 ("배포 완료", "작업 진행 중")
+  · 배경 사실 ("약관 발효일이 9/1로 정해짐" — 이건 workContext 입니다)
+  · 앞으로 할 일 ("~를 수정해야 함")
+- impact 는 "그래서 받는 쪽이 뭘 다시 확인해야 하는지" 를 구체적으로.
+  text 를 말만 바꿔 되풀이하면 안 됩니다.
+
+## workContext (업무맥락)
+- 2~3줄. 이 일이 왜 생겼는지의 배경. 무엇을 했는지가 아니라 왜 하게 됐는지.
+
+## openQuestions (추가확인)
+받는 팀이 **앞 팀에게 되물어야 할 것**입니다. 아래 셋을 모두 만족하는 것만 넣으세요.
+
+1. **원문을 읽어도 답을 알 수 없어야 합니다.**
+   원문에 이미 적혀 있으면 절대 넣지 마세요. (예: 원문에 "아직 안 봤음" 이라고 있으면
+   "그건 어떻게 됐나요?" 는 질문이 아닙니다. 이미 답이 나와 있습니다.)
+
+2. **두 팀 사이에 아직 안 정해진 것이어야 합니다.**
+   넣어야 하는 것:
+   · 앞 팀이 "안 정했음", "정해주면 좋겠음", "논의 필요" 라고 명시적으로 남긴 것
+     → **이건 최우선입니다. 원문에 이런 문장이 있으면 반드시 질문으로 만드세요.**
+   · 기준·소유 팀·작업 순서가 정해지지 않아 시작을 못 하는 것
+   · 원문의 서술이 서로 어긋나 어느 쪽이 맞는지 확인해야 하는 것
+
+   빼야 하는 것:
+   · **받는 팀이 혼자 결정하고 실행하면 끝나는 일.** 이건 질문이 아니라 할 일입니다.
+     (예: "알림 수신자에 우리 팀을 추가할지", "운영팀에 언제 공지할지",
+      "정규식을 수정할지" — 전부 물어볼 필요 없이 그냥 하면 되는 것들)
+     판단 기준: 앞 팀의 답을 못 받아도 우리가 진행할 수 있으면 질문이 아닙니다.
+   · 원문에 이미 상태가 적힌 것 ("~결정되었는가?" 형태가 나오면 대개 여기 해당)
+
+3. **진행 상태를 되묻지 마세요.**
+   "~완료되었는가?", "~상태는 무엇인가?" 형태는 쓰지 마세요.
+   원문에 안 적혔으면 안 된 것으로 보면 됩니다.
+
+좋은 질문은 대개 이런 것입니다:
+- 앞 팀이 명시적으로 "이건 정해줘야 한다" 고 남긴 판단
+- 두 팀 사이에 기준·소유·순서가 안 정해진 것
+- 원문의 서술이 서로 어긋나서 어느 쪽이 맞는지 물어야 하는 것
+
+최대 3개. 조건에 맞는 게 없으면 **빈 배열**로 두세요. 억지로 채우지 마세요.
+why 에는 질문을 되풀이하지 말고, **답을 못 받으면 무엇이 막히는지** 를 쓰세요.
+
+## suggestedPriority
+받는 쪽 기준의 시급도. URGENT(지금 안 하면 손해) / HIGH(이번 스프린트 필수) /
+NORMAL(계획된 일반 업무) / LOW(나중에 해도 됨).
 
 반드시 아래 JSON 스키마만 출력하세요. 설명 문장 금지.
 {
-  "summary": "3~5줄. 줄바꿈은 \\n",
+  "summary": "3~4줄. 줄바꿈은 \n",
   "changes": [{"type":"added|changed|removed","text":"바뀐 것","impact":"받는 쪽에 미치는 영향"}],
-  "workContext": "이 업무가 왜 존재하는지 2~3줄 배경",
-  "openQuestions": [{"question":"되물을 것","why":"왜 필요한지"}],
+  "workContext": "2~3줄 배경",
+  "openQuestions": [{"question":"앞 팀에게 되물을 것","why":"답을 못 받으면 뭐가 막히는지"}],
   "suggestedPriority": "URGENT|HIGH|NORMAL|LOW",
   "priorityReason": "왜 그 등급인지 한 줄"
 }`;

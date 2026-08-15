@@ -88,6 +88,34 @@ async function notionFetch(
   return body as Record<string, unknown>;
 }
 
+/**
+ * 사용자가 준 id 가 실제 데이터베이스가 아닐 때를 구제한다.
+ *
+ * 아주 흔한 상황: Notion 에서 페이지를 만들고 그 안에 표를 넣으면(인라인 데이터베이스),
+ * 페이지 URL 을 복사해도 그건 "페이지" id 라서 Notion 이
+ * "Provided ID ... is a page, not a database" 로 거절한다.
+ * 그럴 때 페이지의 자식 블록에서 child_database 를 찾아 그 id 로 넘어간다.
+ */
+async function resolveDatabaseId(id: string, token: string): Promise<string> {
+  try {
+    await notionFetch(`/databases/${id}`, token);
+    return id;
+  } catch {
+    /* 데이터베이스가 아님 → 아래에서 페이지로 취급해 본다 */
+  }
+
+  const res = await notionFetch(`/blocks/${id}/children?page_size=100`, token).catch(() => null);
+  const blocks = (res?.results as NotionBlock[]) ?? [];
+  const child = blocks.find((b) => b.type === "child_database");
+  if (child) return child.id;
+
+  throw new ApiError(
+    400,
+    "NOTION_NOT_A_DATABASE",
+    "이 id 는 데이터베이스가 아니라 일반 페이지입니다. 페이지 안에 표를 만들거나, 표를 전체 페이지(Table - Full page)로 만드세요.",
+  );
+}
+
 /** 데이터베이스의 data source id 를 찾는다. 구버전 DB 면 null (레거시 경로로 감). */
 async function resolveDataSourceId(databaseId: string, token: string): Promise<string | null> {
   try {
@@ -189,14 +217,15 @@ export async function listDatabasePages(
     sorts: [{ timestamp: "last_edited_time", direction: "descending" }],
   });
 
-  const dataSourceId = await resolveDataSourceId(databaseId, token);
+  const realDbId = await resolveDatabaseId(databaseId, token);
+  const dataSourceId = await resolveDataSourceId(realDbId, token);
 
   const result = dataSourceId
     ? await notionFetch(`/data_sources/${dataSourceId}/query`, token, {
         method: "POST",
         body,
       })
-    : await notionFetch(`/databases/${databaseId}/query`, token, {
+    : await notionFetch(`/databases/${realDbId}/query`, token, {
         method: "POST",
         body,
         version: LEGACY_VERSION,
@@ -300,10 +329,17 @@ export async function fetchPageContent(
 
 /** 연결 테스트용. 성공하면 DB 제목을 돌려준다. */
 export async function testNotionConnection(databaseId: string, token: string) {
-  const db = await notionFetch(`/databases/${databaseId}`, token).catch(async () =>
-    notionFetch(`/databases/${databaseId}`, token, { version: LEGACY_VERSION }),
+  const realDbId = await resolveDatabaseId(databaseId, token);
+  const db = await notionFetch(`/databases/${realDbId}`, token).catch(async () =>
+    notionFetch(`/databases/${realDbId}`, token, { version: LEGACY_VERSION }),
   );
   const title = richTextToString(db.title) || "(제목 없음)";
   const dataSources = (db.data_sources as Array<{ id: string; name?: string }>) ?? [];
-  return { title, apiVersion: dataSources.length ? NEW_VERSION : LEGACY_VERSION, dataSources };
+  return {
+    title,
+    apiVersion: dataSources.length ? NEW_VERSION : LEGACY_VERSION,
+    dataSources,
+    /** 사용자가 준 id 와 다르면, 페이지 안의 표를 자동으로 찾아낸 것 */
+    resolvedDatabaseId: realDbId,
+  };
 }

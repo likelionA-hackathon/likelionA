@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ApiError, handler, ok, readJson } from "@/lib/http";
 import { scope } from "@/lib/workspace";
 import { fetchPageContent, listDatabasePages } from "@/lib/notion";
-import { isAiEnabled, resolvePriorityWithAI, summarizeHandover } from "@/lib/claude";
+import { currentModel, isAiEnabled, resolvePriorityWithAI, summarizeHandover } from "@/lib/claude";
 import { normalizePriority } from "@/lib/priority";
 import { toHandoverListDTO } from "@/lib/serialize";
 import type { SyncResultDTO } from "@/types/api";
@@ -69,7 +69,7 @@ export const POST = handler(async (req: Request, ctx: Ctx) => {
   }
   const aiEnabled = isAiEnabled();
   if (!aiEnabled) {
-    warnings.push("ANTHROPIC_API_KEY 가 없어 AI 요약 없이 원문만 저장했습니다.");
+    warnings.push("AI 키(GEMINI_API_KEY 또는 ANTHROPIC_API_KEY)가 없어 원문만 저장했습니다.");
   }
 
   let pages;
@@ -140,7 +140,7 @@ export const POST = handler(async (req: Request, ctx: Ctx) => {
         changes = ai.changes;
         workContext = ai.workContext;
         openQuestions = ai.openQuestions;
-        aiModel = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001";
+        aiModel = currentModel();
         aiGeneratedAt = new Date();
 
         if (!ruled.matched) {

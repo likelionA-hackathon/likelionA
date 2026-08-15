@@ -27,7 +27,7 @@ export const POST = handler(async (req: Request, ctx: Ctx) => {
     throw new ApiError(
       503,
       "AI_DISABLED",
-      "ANTHROPIC_API_KEY 가 설정되지 않아 AI 생성을 할 수 없습니다.",
+      "AI 키가 없습니다. .env 에 GEMINI_API_KEY 또는 ANTHROPIC_API_KEY 를 넣으세요.",
     );
   }
 
