@@ -87,6 +87,51 @@ git switch feat/내이름       # 다시 내 브랜치로 돌아오기
 
 ---
 
+## 실제로 났던 사고 3가지 (읽어주세요)
+
+### 1. 오래된 main 에서 브랜치를 땄다
+
+브랜치를 만든 뒤 남들이 main 에 올린 코드가 내 브랜치엔 없습니다.
+그 상태로 push 하면 **로컬에선 되는데 배포에서 깨집니다.**
+
+작업 시작 전마다 이렇게 하세요.
+
+```bash
+git switch main
+git pull
+git switch feat/내이름
+git merge main        # ← 내 브랜치에 최신 main 을 끌어옴
+```
+
+### 2. AI 가 만들어준 코드의 import 경로가 가짜였다
+
+AI 는 없는 파일을 그럴듯한 이름으로 import 합니다.
+붙여넣기 전에 **그 경로의 파일이 실제로 있는지** 확인하세요.
+
+| AI 가 잘 만들어내는 가짜 | 우리 레포의 실제 |
+|---|---|
+| `@/lib/client-api` | `@/lib/api-client` |
+| `@/components/product-ui` | (없음. 필요하면 직접 만들기) |
+| `@/lib/apiClient`, `@/utils/api` | `@/lib/api-client` |
+
+VSCode 에서 import 경로에 빨간 줄이 뜨면 그게 신호입니다.
+
+### 3. build 를 안 해보고 push 했다
+
+`npm run dev` 가 되는 것과 `npm run build` 가 되는 것은 다릅니다.
+빌드는 타입 검사를 하고, 배포는 빌드로 돌아갑니다.
+
+**push 전에 반드시:**
+
+```bash
+npm run build
+```
+
+> 윈도우에서 `EPERM ... query_engine-windows.dll.node` 가 나면
+> `npm run dev` 가 켜져 있는 겁니다. Ctrl+C 로 끄고 다시 하세요.
+
+---
+
 ## 커밋 메시지
 
 형식만 맞추면 됩니다. 완벽하게 안 써도 돼요.

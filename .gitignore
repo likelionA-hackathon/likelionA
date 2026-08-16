@@ -13,3 +13,15 @@ yarn-error.log*
 next-env.d.ts
 *.tsbuildinfo
 /prisma/dev.db
+.idea
+.vscode/
+*.swp
+*.swo
+*.log
+coverage/
+.turbo/
+Thumbs.db
+Desktop.ini
+/prisma/dev.db-journal
+/prisma/dev.db-wal
+/prisma/dev.db-shm
