@@ -70,8 +70,9 @@ export const POST = handler(async (req: Request, ctx: Ctx) => {
   const jiraConn = await prisma.connection.findUnique({
     where: { workspaceId_provider: { workspaceId: partner.id, provider: "JIRA" } },
   });
-  const projectKey =
-    (jiraConn?.config as { projectKey?: string } | null)?.projectKey ?? "BAT";
+  const jiraConfig = (jiraConn?.config ?? {}) as { site?: string; projectKey?: string };
+  const projectKey = jiraConfig.projectKey ?? "BAT";
+  const site = jiraConfig.site ?? "baton.atlassian.net";
 
   const now = new Date();
   const sharedFields = body.share
@@ -101,6 +102,7 @@ export const POST = handler(async (req: Request, ctx: Ctx) => {
           priority: action.priority,
           targetSystem: "JIRA",
           targetPayload: buildJiraPreview({
+            site,
             projectKey,
             title: action.title,
             body: action.description,
@@ -127,6 +129,7 @@ export const POST = handler(async (req: Request, ctx: Ctx) => {
         priority: body.priority ?? "NORMAL",
         targetSystem: "JIRA",
         targetPayload: buildJiraPreview({
+          site,
           projectKey,
           title: body.title,
           body: body.body,

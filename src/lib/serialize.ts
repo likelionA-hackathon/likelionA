@@ -10,6 +10,7 @@ import type {
 } from "@prisma/client";
 import { PRIORITY_LABEL_KO, PRIORITY_RANK, PRIORITY_TONE } from "@/lib/priority";
 import type {
+  AdfDocument,
   BoardItemDTO,
   ConnectionDTO,
   HandoverChangeDTO,
@@ -264,8 +265,36 @@ export function toRequestDTO(
   };
 }
 
-/** NextAction → Jira 이슈 미리보기 payload (실제 write 없음). */
+/** 평문을 Jira v3 의 ADF 문서로. 빈 줄 기준으로 문단을 나눕니다. */
+function toAdf(text: string): AdfDocument {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  return {
+    type: "doc",
+    version: 1,
+    content: (paragraphs.length ? paragraphs : ["(내용 없음)"]).map((p) => ({
+      type: "paragraph" as const,
+      content: [{ type: "text" as const, text: p }],
+    })),
+  };
+}
+
+/**
+ * NextAction → Jira 이슈 생성 요청 미리보기.
+ *
+ * 실제로 쏘지는 않지만 **Jira Cloud REST API v3 스펙 그대로** 만듭니다.
+ * 여기서 나온 body 를 그대로 curl 로 쏘면 실제 이슈가 생성됩니다.
+ * 데모에서 "붙이기만 하면 된다" 를 보여주는 지점입니다.
+ *
+ *   curl -X POST https://<site>/rest/api/3/issue \
+ *     -u <email>:<api-token> -H "Content-Type: application/json" \
+ *     -d '<body>'
+ */
 export function buildJiraPreview(input: {
+  site: string;
   projectKey: string;
   title: string;
   body?: string | null;
@@ -282,20 +311,40 @@ export function buildJiraPreview(input: {
 
   const description = [
     input.body ?? "",
-    input.handoverTitle ? `\n---\n출처 인수인계: ${input.handoverTitle}` : "",
-    "\n(Baton 에서 전달됨)",
+    input.handoverTitle ? `출처 인수인계: ${input.handoverTitle}` : "",
+    "Baton 에서 전달됨",
   ]
     .filter(Boolean)
-    .join("\n")
+    .join("\n\n")
     .trim();
 
+  const priorityName = JIRA_PRIORITY[input.priority];
+  const labels = ["baton", "handover"];
+
   return {
-    project: input.projectKey,
-    issueType: "Task",
-    summary: input.title,
-    description,
-    priority: JIRA_PRIORITY[input.priority],
-    labels: ["baton", "handover"],
-    assignee: input.assignee ?? null,
+    method: "POST",
+    url: `https://${input.site}/rest/api/3/issue`,
+    body: {
+      fields: {
+        project: { key: input.projectKey },
+        issuetype: { name: "Task" },
+        summary: input.title,
+        description: toAdf(description),
+        priority: { name: priorityName },
+        labels,
+        // Jira Cloud 는 이름이 아니라 accountId 로 사람을 지정합니다.
+        // 담당자 매핑은 아직 없으므로 null (Jira 에서 미지정으로 생성됨).
+        assignee: null,
+      },
+    },
+    display: {
+      project: input.projectKey,
+      issueType: "Task",
+      summary: input.title,
+      description,
+      priority: priorityName,
+      labels,
+      assignee: input.assignee ?? null,
+    },
   };
 }

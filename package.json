@@ -8,6 +8,7 @@
     "start": "next start",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:clean": "tsx prisma/seed.ts --skeleton",
     "db:reset": "prisma db push --force-reset && npm run db:seed",
     "db:studio": "prisma studio",
     "doctor": "node scripts/doctor.mjs",

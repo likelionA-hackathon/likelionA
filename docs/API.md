@@ -370,21 +370,58 @@ query 로 좁힐 수도 있습니다: `?direction=OUTGOING`
   "to":   { "id": "...", "name": "페이팀" },
   "targetSystem": "Jira",
 
-  "targetPayload": {                          // ← 전달 미리보기 패널에 그대로 그리면 됩니다
-    "project": "PAY",
-    "issueType": "Task",
-    "summary": "고객센터 조회 화면의 결제번호 정규식 수정",
-    "description": "tosspay_ 접두사 가정이 하드코딩되어 있음...\n\n(Baton 에서 전달됨)",
-    "priority": "High",
-    "labels": ["baton", "handover"],
-    "assignee": null
+  // ← 전달 미리보기 패널. 실제 Jira Cloud REST API v3 가 그대로 받는 형식입니다.
+  "targetPayload": {
+    "method": "POST",
+    "url": "https://baton.atlassian.net/rest/api/3/issue",
+
+    // 사람이 읽는 요약 — 표로 뿌리세요
+    "display": {
+      "project": "PAY", "issueType": "Task",
+      "summary": "고객센터 조회 화면의 결제번호 정규식 수정",
+      "description": "tosspay_ 접두사 가정이 하드코딩되어 있음...",
+      "priority": "High", "labels": ["baton","handover"], "assignee": null
+    },
+
+    // 실제 요청 본문 — JSON.stringify(body, null, 2) 로 코드블록에 뿌리세요
+    "body": {
+      "fields": {
+        "project": { "key": "PAY" },
+        "issuetype": { "name": "Task" },
+        "summary": "고객센터 조회 화면의 결제번호 정규식 수정",
+        "description": {            // ADF. Jira v3 는 평문을 안 받습니다
+          "type": "doc", "version": 1,
+          "content": [{ "type":"paragraph", "content":[{ "type":"text", "text":"..." }] }]
+        },
+        "priority": { "name": "High" },
+        "labels": ["baton", "handover"],
+        "assignee": null
+      }
+    }
   },
 
   "sharedAt": "...", "createdAt": "..."
 }]
 ```
 
-**실제 Jira write 는 없습니다.** `targetPayload` 가 "보낸다면 이렇게 보낼 것" 미리보기입니다.
+**실제 Jira write 는 없습니다.** 다만 `targetPayload.body` 는 진짜 스펙 그대로라,
+그대로 복사해서 curl 로 쏘면 실제 이슈가 생성됩니다.
+
+미리보기 패널은 이렇게 그리면 설득력이 큽니다.
+
+```
+┌──────────────────────────────────────────────────┐
+│ POST https://baton.atlassian.net/rest/api/3/issue│  ← method + url
+├────────────────────┬─────────────────────────────┤
+│ 프로젝트   PAY      │ {                           │
+│ 유형       Task     │   "fields": {               │  ← body 를
+│ 우선순위   High     │     "project": {"key":"PAY"}│     JSON 그대로
+│ 라벨       baton    │     ...                     │
+│ (display 를 표로)   │   }                         │
+│                    │ }                           │
+└────────────────────┴─────────────────────────────┘
+              [ Jira 로 전송 (데모) ]
+```
 
 ### `POST /api/workspaces/:workspaceId/board`
 

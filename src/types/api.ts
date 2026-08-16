@@ -129,15 +129,52 @@ export type BoardItemDTO = {
   createdAt: string;
 };
 
-/** 실제 Jira write 는 안 합니다. 이 payload 를 미리보기 패널에 그대로 그리면 됩니다. */
+/**
+ * "Jira 로 보낸다면 이렇게 보낸다" 미리보기.
+ * 실제 write 는 하지 않지만, **Jira Cloud REST API v3 가 그대로 받는 형식**입니다.
+ * (description 이 ADF(Atlassian Document Format) 중첩 JSON 인 것까지 실제와 동일)
+ *
+ * 김건희: 미리보기 패널을 이렇게 그리면 설득력이 큽니다.
+ *   상단  → `${method} ${url}`  을 모노스페이스로
+ *   좌측  → display 를 표로 (사람이 읽는 요약)
+ *   우측  → body 를 JSON.stringify(body, null, 2) 로 코드블록
+ */
 export type JiraPreviewPayload = {
-  project: string;
-  issueType: string;
-  summary: string;
-  description: string;
-  priority: string;
-  labels: string[];
-  assignee: string | null;
+  method: "POST";
+  /** 예: https://baton.atlassian.net/rest/api/3/issue */
+  url: string;
+  /** 실제 요청 본문. 그대로 복사해서 curl 로 쏘면 이슈가 생성됩니다. */
+  body: {
+    fields: {
+      project: { key: string };
+      issuetype: { name: string };
+      summary: string;
+      description: AdfDocument;
+      priority: { name: string };
+      labels: string[];
+      assignee: { accountId: string } | null;
+    };
+  };
+  /** 표로 뿌릴 때 쓰는 사람용 요약. ADF 를 파싱할 필요가 없게 하려고 같이 내려줍니다. */
+  display: {
+    project: string;
+    issueType: string;
+    summary: string;
+    description: string;
+    priority: string;
+    labels: string[];
+    assignee: string | null;
+  };
+};
+
+/** Atlassian Document Format. Jira v3 는 description 을 평문으로 안 받습니다. */
+export type AdfDocument = {
+  type: "doc";
+  version: 1;
+  content: Array<{
+    type: "paragraph";
+    content: Array<{ type: "text"; text: string }>;
+  }>;
 };
 
 export type RequestDTO = {
