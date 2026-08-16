@@ -25,3 +25,4 @@ Desktop.ini
 /prisma/dev.db-journal
 /prisma/dev.db-wal
 /prisma/dev.db-shm
+.gitignore
