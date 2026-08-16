@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "@/lib/client-api";
-import { ErrorState, formatDate, LoadingState, PriorityPill } from "@/components/product-ui";
 import type {
   DashboardDTO,
   HandoverChangeDTO,
@@ -13,11 +11,121 @@ import type {
 
 type Props = { workspaceId: string; handoverId: string };
 
+type ApiEnvelope<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: { code?: string; message?: string; details?: unknown } };
+
 const CHANGE_BADGE: Record<HandoverChangeDTO["type"], string> = {
   added: "완료",
   changed: "공유팀",
   removed: "확정",
 };
+
+const PRIORITY_STYLE: Record<string, string> = {
+  red: "border-[#111] bg-[#111] text-white",
+  orange: "border-[#2a2a2a] bg-white text-[#111]",
+  slate: "border-[#d4d4d4] bg-[#f4f4f4] text-[#333]",
+  gray: "border-[#e2e2e2] bg-[#f7f7f7] text-[#666]",
+};
+
+function isApiSuccess<T>(value: unknown): value is { ok: true; data: T } {
+  return Boolean(value) && typeof value === "object" && (value as { ok?: unknown }).ok === true && "data" in (value as object);
+}
+
+function isApiFailure(value: unknown): value is { ok: false; error: { message?: string } } {
+  return Boolean(value) && typeof value === "object" && (value as { ok?: unknown }).ok === false && "error" in (value as object);
+}
+
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  let body: unknown = null;
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    try {
+      body = (await response.json()) as ApiEnvelope<T>;
+    } catch {
+      throw new Error("서버 응답 JSON을 해석할 수 없습니다.");
+    }
+  } else if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `요청에 실패했습니다. (${response.status})`);
+  } else {
+    throw new Error("서버 응답 형식이 올바르지 않습니다.");
+  }
+
+  if (!response.ok) {
+    if (isApiFailure(body)) {
+      throw new Error(body.error.message ?? `요청에 실패했습니다. (${response.status})`);
+    }
+    throw new Error(`요청에 실패했습니다. (${response.status})`);
+  }
+
+  if (isApiSuccess<T>(body)) {
+    return body.data;
+  }
+
+  throw new Error("서버 응답 형식이 올바르지 않습니다.");
+}
+
+function formatDate(value: string | null | undefined, withTime = false) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const base = `${map.year}-${map.month}-${map.day}`;
+  return withTime ? `${base} ${map.hour}:${map.minute}` : base;
+}
+
+function LoadingState({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-[#dbdbdb] bg-white px-5 py-10 text-center">
+      <p className="text-xs font-bold text-[#111]">{label}</p>
+      <p className="mt-2 text-[11px] text-[#6b6b6b]">잠시만 기다려주세요.</p>
+    </div>
+  );
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="rounded-lg border border-[#dbdbdb] bg-white px-5 py-10 text-center">
+      <p className="text-xs font-bold text-[#111]">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-3 h-8 rounded-[7px] border border-[#111] px-4 text-[11px] font-bold text-[#111] transition hover:bg-[#f6f6f6]"
+      >
+        다시 시도
+      </button>
+    </div>
+  );
+}
+
+function PriorityPill({ priority }: { priority: NextActionDTO["priority"] }) {
+  return (
+    <span className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-bold ${PRIORITY_STYLE[priority.tone] ?? PRIORITY_STYLE.gray}`}>
+      {priority.label}
+    </span>
+  );
+}
 
 function SectionTitle({ children, accent = false }: { children: React.ReactNode; accent?: boolean }) {
   return <h2 className={`text-lg font-bold tracking-[-0.025em] ${accent ? "text-[#5b21b6]" : "text-[#111]"}`}>{children}</h2>;
