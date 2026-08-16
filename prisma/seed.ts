@@ -269,13 +269,16 @@ async function main() {
   ];
 
   const createdHandovers = [];
+  // createdHandovers.length 를 row 생성에서 참조하면 타입 추론이 순환한다.
+  let handoverIndex = 0;
   for (const h of handovers) {
+    handoverIndex += 1;
     const row = await prisma.handoverItem.create({
       data: {
         workspaceId: settleTeam.id, // 받는 쪽 = 정산팀
         linkId: link.id,
         sourceProvider: "NOTION",
-        sourceRef: `demo-${createdHandovers.length + 1}`,
+        sourceRef: `demo-${handoverIndex}`,
         sourceUrl: "https://www.notion.so/demo-handover",
         sourceEditedAt: h.occurredAt,
         title: h.title,
