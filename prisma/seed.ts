@@ -269,13 +269,17 @@ async function main() {
   ];
 
   const createdHandovers = [];
+  // 주의: sourceRef 를 createdHandovers.length 로 만들면 타입이 순환 참조가 되어
+  // (배열 타입 ← row ← 배열 길이) 빌드 시 TS7022 가 납니다. 인덱스를 따로 셉니다.
+  let handoverIndex = 0;
   for (const h of handovers) {
+    handoverIndex += 1;
     const row = await prisma.handoverItem.create({
       data: {
         workspaceId: settleTeam.id, // 받는 쪽 = 정산팀
         linkId: link.id,
         sourceProvider: "NOTION",
-        sourceRef: `demo-${createdHandovers.length + 1}`,
+        sourceRef: `demo-${handoverIndex}`,
         sourceUrl: "https://www.notion.so/demo-handover",
         sourceEditedAt: h.occurredAt,
         title: h.title,

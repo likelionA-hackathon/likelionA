@@ -19,18 +19,51 @@
 { "ok": false, "error": { "code": "NOT_A_MEMBER", "message": "이 워크스페이스의 멤버가 아닙니다." } }
 ```
 
-프론트 헬퍼 예시:
+### fetch 를 직접 쓰지 마세요
+
+`src/lib/api-client.ts` 에 다 만들어뒀습니다. 타입까지 붙어 있습니다.
 
 ```ts
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-  });
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error.message);
-  return json.data as T;
+import { api, ApiError } from "@/lib/api-client";
+
+// 대시보드
+const { workspaces } = await api.me();
+const dash = await api.dashboard(workspaces[0].id);
+dash.stats.newHandovers;              // number
+dash.recentHandovers[0].priority.label; // "긴급"
+
+// 인수인계 상세 + 확인 버튼
+const detail = await api.handover(handoverId);
+const updated = await api.acknowledge(handoverId);  // 응답 모양이 같아서 그대로 교체
+
+// 다음 업무 상태 토글
+await api.updateAction(actionId, { status: "DONE" });
+
+// 공유보드: 미리보기 → 전달
+const [draft] = await api.createBoardItems(wsId, { nextActionIds: [id] });
+draft.targetPayload;                  // Jira 미리보기 JSON
+await api.updateBoardStatus(draft.id, "SHARED");
+```
+
+에러는 `throw` 됩니다. 코드로 분기하세요.
+
+```ts
+try {
+  await api.notionSync(wsId);
+} catch (e) {
+  if (e instanceof ApiError && e.code === "NOTION_NOT_CONNECTED") {
+    setMessage("Notion 연결이 먼저 필요합니다");
+  } else if (e instanceof ApiError) {
+    setMessage(e.message);   // 사람이 읽을 한국어 메시지가 들어 있습니다
+  }
 }
+```
+
+다른 팀 시점으로 보고 싶으면 (로그인 붙기 전까지만):
+
+```ts
+import { setDevUser } from "@/lib/api-client";
+setDevUser("cheolwoo@baton.dev");   // 페이팀 시점
 ```
 
 ### 로그인 전에 개발하는 법 (중요)
