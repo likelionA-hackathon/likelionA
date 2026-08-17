@@ -131,25 +131,24 @@ const del = <T>(p: string) => request<T>("DELETE", p);
 type Priority = "URGENT" | "HIGH" | "NORMAL" | "LOW";
 
 export const api = {
-  // ── 온보딩 ──────────────────────────────────────
+  //온보딩
   /** 로그인 직후 호출. workspaces 가 비면 팀 생성 화면으로 보내세요. */
   me: () => get<{ user: { id: string; email: string; name: string | null; image: string | null }; workspaces: WorkspaceDTO[] }>("/api/me"),
 
   createWorkspace: (body: { name: string; tagline?: string }) =>
     post<WorkspaceDTO>("/api/workspaces", body),
 
-  // ── 파트너 연결 ─────────────────────────────────
+  //파트너 연결
   getLink: (workspaceId: string) => get<PartnerDTO | null>(`/api/workspaces/${workspaceId}/link`),
   /** 초대 코드 발급. 링크는 `${location.origin}/invite/${inviteCode}` 로 조립하세요. */
   createInvite: (workspaceId: string) => post<PartnerDTO>(`/api/workspaces/${workspaceId}/link`),
   acceptInvite: (body: { inviteCode: string; workspaceId: string }) =>
     post<PartnerDTO>("/api/links/accept", body),
 
-  // ── 대시보드 ────────────────────────────────────
-  /** 대시보드 화면은 이 호출 하나면 끝납니다. */
+  // 대시보드
   dashboard: (workspaceId: string) => get<DashboardDTO>(`/api/workspaces/${workspaceId}/dashboard`),
 
-  // ── 연결 관리 ───────────────────────────────────
+  //연결 관리
   connections: (workspaceId: string) => get<ConnectionDTO[]>(`/api/workspaces/${workspaceId}/connections`),
   saveConnection: (
     workspaceId: string,
@@ -157,11 +156,11 @@ export const api = {
       | { provider: "NOTION"; token: string; databaseId: string }
       | { provider: "JIRA"; site: string; projectKey: string },
   ) => post<ConnectionDTO>(`/api/workspaces/${workspaceId}/connections`, body),
-  /** 시간이 걸립니다(건당 1~3초). 로딩 표시를 꼭 넣으세요. */
+  /** 로딩 표시 필요 */
   notionSync: (workspaceId: string, body?: { limit?: number; target?: "partner" | "self"; force?: boolean }) =>
     post<SyncResultDTO>(`/api/workspaces/${workspaceId}/notion/sync`, body ?? {}),
 
-  // ── 인수인계 ────────────────────────────────────
+  //인수인계
   handovers: (
     workspaceId: string,
     query?: { status?: string; priority?: string; q?: string; take?: number },
@@ -177,7 +176,7 @@ export const api = {
   generateActions: (handoverId: string) =>
     post<NextActionDTO[]>(`/api/handovers/${handoverId}/actions/generate`),
 
-  // ── 다음 업무 ───────────────────────────────────
+  // 다음 업무
   actions: (
     workspaceId: string,
     query?: { status?: string; priority?: string; assignee?: string; handoverId?: string; q?: string },
@@ -211,7 +210,7 @@ export const api = {
 
   deleteAction: (actionId: string) => del<{ deleted: boolean }>(`/api/next-actions/${actionId}`),
 
-  // ── 공유보드 ────────────────────────────────────
+  // 공유보드
   board: (workspaceId: string, query?: { direction?: "OUTGOING" | "INCOMING" }) =>
     get<BoardItemDTO[]>(`/api/workspaces/${workspaceId}/board${qs(query)}`),
 
@@ -229,7 +228,7 @@ export const api = {
   updateBoardStatus: (boardItemId: string, status: "DRAFT" | "SHARED" | "ACCEPTED" | "DECLINED") =>
     patch<{ item: BoardItemDTO; copiedAction: NextActionDTO | null }>(`/api/board/${boardItemId}`, { status }),
 
-  // ── 정보요청 ────────────────────────────────────
+  // 정보요청
   requests: (
     workspaceId: string,
     query?: { direction?: "OUTGOING" | "INCOMING"; status?: string },

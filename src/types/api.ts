@@ -13,15 +13,11 @@ export type PriorityCode = "URGENT" | "HIGH" | "NORMAL" | "LOW";
 /** 배지 하나 그리는 데 필요한 것 전부. 프론트에서 매핑 테이블 만들 필요 없음. */
 export type PriorityBadge = {
   code: PriorityCode;
-  /** "긴급" | "높음" | "보통" | "낮음" */
   label: string;
-  /** "red" | "orange" | "slate" | "gray" */
   tone: "red" | "orange" | "slate" | "gray";
   /** 정렬용. 0 이 가장 급함 */
   rank: number;
-  /** 원본에 적혀 있던 표기 ("Critical", "P0") — 툴팁용 */
   raw: string | null;
-  /** AI/규칙이 왜 이렇게 매겼는지 — 툴팁용 */
   reason: string | null;
 };
 
@@ -44,7 +40,6 @@ export type PartnerDTO = {
 export type ConnectionDTO = {
   id: string;
   provider: "NOTION" | "JIRA" | "SLACK";
-  /** "Notion" | "Jira" | "Slack" */
   providerLabel: string;
   status: "CONNECTED" | "DISCONNECTED" | "ERROR" | "MOCK";
   statusLabel: string;
@@ -79,10 +74,10 @@ export type HandoverChangeDTO = {
   impact: string;
 };
 
+//이미 요청 보낸 건지
 export type HandoverQuestionDTO = {
   question: string;
   why: string;
-  /** 이미 정보요청으로 보낸 질문인지 */
   requested: boolean;
   requestId: string | null;
 };
