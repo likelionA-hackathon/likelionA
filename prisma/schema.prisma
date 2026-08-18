@@ -1,4 +1,4 @@
-// Baton — 파트너 팀 간 인수인계 허브
+// PM Connector — 파트너 팀 간 인수인계 허브
 //   Workspace  = 하나의 팀. 사용자는 Membership 으로 소속된다.
 //   Link       = 두 Workspace 를 잇는 파트너 관계. 인수인계/공유보드/요청은 전부 이 Link 위에서 일어난다.
 //   Connection = Workspace 가 붙인 외부 도구 (Notion 은 실연동, Jira 는 목데이터).

@@ -9,7 +9,7 @@ export function ConnectionsScreen({ workspaceId }: { workspaceId: string }) {
   const [connections, setConnections] = useState<ConnectionDTO[]>([]);
   const [partner, setPartner] = useState<PartnerDTO | null>(null);
   const [token, setToken] = useState(""); const [databaseId, setDatabaseId] = useState("");
-  const [site, setSite] = useState("baton.atlassian.net"); const [projectKey, setProjectKey] = useState("BAT");
+  const [site, setSite] = useState("pmconnector.atlassian.net"); const [projectKey, setProjectKey] = useState("BAT");
   const [busy, setBusy] = useState<string | null>(null); const [message, setMessage] = useState<string | null>(null); const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => { setError(null); try { const [items, link] = await Promise.all([api.connections(workspaceId), api.getLink(workspaceId)]); setConnections(items); setPartner(link); } catch (caught) { setError(apiErrorMessage(caught, "연결 정보를 불러오지 못했습니다.")); } }, [workspaceId]);
   useEffect(() => { void load(); }, [load]);

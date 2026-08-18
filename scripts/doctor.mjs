@@ -33,7 +33,7 @@ function readEnv() {
 }
 
 async function main() {
-  console.log("\n  Baton 세팅 진단\n" + "─".repeat(62));
+  console.log("\n  PM Connector 세팅 진단\n" + "─".repeat(62));
 
   // ── 1. Node ──────────────────────────────────────
   const major = Number(process.version.slice(1).split(".")[0]);

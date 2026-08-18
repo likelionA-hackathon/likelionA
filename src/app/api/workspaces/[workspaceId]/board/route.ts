@@ -72,7 +72,7 @@ export const POST = handler(async (req: Request, ctx: Ctx) => {
   });
   const jiraConfig = (jiraConn?.config ?? {}) as { site?: string; projectKey?: string };
   const projectKey = jiraConfig.projectKey ?? "BAT";
-  const site = jiraConfig.site ?? "baton.atlassian.net";
+  const site = jiraConfig.site ?? "pmconnector.atlassian.net";
 
   const now = new Date();
   const sharedFields = body.share

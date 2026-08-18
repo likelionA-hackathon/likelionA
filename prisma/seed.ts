@@ -77,8 +77,8 @@ async function main() {
           {
             provider: "JIRA",
             status: "MOCK",
-            displayName: "baton.atlassian.net · PAY",
-            config: { site: "baton.atlassian.net", projectKey: "PAY" },
+            displayName: "pmconnector.atlassian.net · PAY",
+            config: { site: "pmconnector.atlassian.net", projectKey: "PAY" },
           },
         ],
       },
@@ -107,8 +107,8 @@ async function main() {
           {
             provider: "JIRA",
             status: "MOCK",
-            displayName: "baton.atlassian.net · STL",
-            config: { site: "baton.atlassian.net", projectKey: "STL" },
+            displayName: "pmconnector.atlassian.net · STL",
+            config: { site: "pmconnector.atlassian.net", projectKey: "STL" },
           },
         ],
       },
@@ -430,13 +430,13 @@ async function main() {
         description: {
           type: "doc",
           version: 1,
-          content: [`${description}`, "Baton 에서 전달됨"].map((t) => ({
+          content: [`${description}`, "PM Connector 에서 전달됨"].map((t) => ({
             type: "paragraph",
             content: [{ type: "text", text: t }],
           })),
         },
         priority: { name: priority },
-        labels: ["baton", "handover"],
+        labels: ["PM Connector", "handover"],
         assignee: null,
       },
     },
@@ -446,7 +446,7 @@ async function main() {
       summary,
       description,
       priority,
-      labels: ["baton", "handover"],
+      labels: ["PM Connector", "handover"],
       assignee: null,
     },
   });
@@ -464,7 +464,7 @@ async function main() {
         sharedAt: daysAgo(1),
         targetSystem: "JIRA",
         targetPayload: jiraPreview(
-          "baton.atlassian.net",
+          "pmconnector.atlassian.net",
           "PAY",
           "고객센터 조회 화면의 결제번호 정규식 수정",
           "tosspay_ 접두사 가정이 하드코딩되어 있음. np_ 도 받도록.",
@@ -484,7 +484,7 @@ async function main() {
         status: "DRAFT",
         targetSystem: "JIRA",
         targetPayload: jiraPreview(
-          "baton.atlassian.net",
+          "pmconnector.atlassian.net",
           "PAY",
           "나이스페이 웹훅 중복 수신 방어 로직 확인",
           "재시도 5회/지수백오프 정책. dedupe 키 제공 가능 여부 확인 필요.",
@@ -506,7 +506,7 @@ async function main() {
         sharedAt: daysAgo(2),
         targetSystem: "JIRA",
         targetPayload: jiraPreview(
-          "baton.atlassian.net",
+          "pmconnector.atlassian.net",
           "STL",
           "토스 정산 리포트 배치 제거 시점 확인",
           "빌링 이관 완료 시점과의 순서 확인.",
@@ -575,7 +575,7 @@ async function main() {
         targetSystem: "JIRA",
         targetPayload: {
           method: "POST",
-          url: "https://baton.atlassian.net/rest/api/3/issue",
+          url: "https://pmconnector.atlassian.net/rest/api/3/issue",
           body: {
             fields: {
               project: { key: "STL" },
@@ -586,11 +586,11 @@ async function main() {
                 version: 1,
                 content: [
                   { type: "paragraph", content: [{ type: "text", text: "빌링 이관 완료 시점과의 순서 확인." }] },
-                  { type: "paragraph", content: [{ type: "text", text: "Baton 에서 전달됨" }] },
+                  { type: "paragraph", content: [{ type: "text", text: "PM Connector 에서 전달됨" }] },
                 ],
               },
               priority: { name: "High" },
-              labels: ["baton", "handover"],
+              labels: ["PM Connector", "handover"],
               assignee: null,
             },
           },
@@ -600,7 +600,7 @@ async function main() {
             summary: "토스 정산 리포트 배치 제거 시점 확인",
             description: "빌링 이관 완료 시점과의 순서 확인.",
             priority: "High",
-            labels: ["baton", "handover"],
+            labels: ["PM Connector", "handover"],
             assignee: null,
           },
         },

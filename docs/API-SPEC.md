@@ -1,4 +1,4 @@
-# Baton API 명세서
+# PM Connector API 명세서
 
 작성 백지우 · 기준 커밋 `main` · 엔드포인트 18개
 
@@ -255,7 +255,7 @@ body 없음. 이미 발급된 `PENDING` 초대가 있으면 **같은 코드**를
 { "provider": "NOTION", "token": "ntn_…", "databaseId": "32자리해시" }
 
 // Jira — 검증 없이 목데이터로 저장 (status=MOCK)
-{ "provider": "JIRA", "site": "baton.atlassian.net", "projectKey": "STL" }
+{ "provider": "JIRA", "site": "pmconnector.atlassian.net", "projectKey": "STL" }
 ```
 
 → `201` `ConnectionDTO` (Notion 은 `apiVersion` 이 추가로 붙음)
@@ -511,13 +511,13 @@ AI 가 다음 업무 초안 3~6개를 만들어 저장합니다. 다시 부르�
 ```jsonc
 {
   "method": "POST",
-  "url": "https://baton.atlassian.net/rest/api/3/issue",
+  "url": "https://pmconnector.atlassian.net/rest/api/3/issue",
 
   // 표로 뿌릴 사람용 요약 — ADF 를 파싱할 필요가 없게 같이 내려줍니다
   "display": {
     "project": "PAY", "issueType": "Task",
     "summary": "…", "description": "…",
-    "priority": "High", "labels": ["baton","handover"], "assignee": null
+    "priority": "High", "labels": ["PM Connector","handover"], "assignee": null
   },
 
   // 실제 요청 본문 — JSON.stringify(body, null, 2) 로 코드블록에
@@ -531,7 +531,7 @@ AI 가 다음 업무 초안 3~6개를 만들어 저장합니다. 다시 부르�
         "content": [{ "type":"paragraph", "content":[{ "type":"text", "text":"…" }] }]
       },
       "priority": { "name": "High" },
-      "labels":   ["baton", "handover"],
+      "labels":   ["PM Connector", "handover"],
       "assignee": null           // Jira Cloud 는 accountId 로 지정
     }
   }

@@ -1,4 +1,4 @@
-# Baton API v1
+# PM Connector API v1
 
 담당: 백지우 · 최종 수정 2026-08-14
 
@@ -199,7 +199,7 @@ body 없음. 이미 발급된 PENDING 초대가 있으면 그 코드를 그대�
     "lastError": null, "isMock": false },
   { "id": "...", "provider": "JIRA", "providerLabel": "Jira",
     "status": "MOCK", "statusLabel": "데모 데이터",
-    "displayName": "baton.atlassian.net · STL", "isMock": true }
+    "displayName": "pmconnector.atlassian.net · STL", "isMock": true }
 ]
 ```
 
@@ -212,7 +212,7 @@ body 없음. 이미 발급된 PENDING 초대가 있으면 그 코드를 그대�
 { "provider": "NOTION", "token": "ntn_xxx", "databaseId": "32자리해시" }
 
 // Jira — 검증 없이 목데이터로 저장
-{ "provider": "JIRA", "site": "baton.atlassian.net", "projectKey": "STL" }
+{ "provider": "JIRA", "site": "pmconnector.atlassian.net", "projectKey": "STL" }
 ```
 
 Notion 실패 시 자주 보는 메시지:
@@ -374,14 +374,14 @@ query 로 좁힐 수도 있습니다: `?direction=OUTGOING`
   // ← 전달 미리보기 패널. 실제 Jira Cloud REST API v3 가 그대로 받는 형식입니다.
   "targetPayload": {
     "method": "POST",
-    "url": "https://baton.atlassian.net/rest/api/3/issue",
+    "url": "https://pmconnector.atlassian.net/rest/api/3/issue",
 
     // 사람이 읽는 요약 — 표로 뿌리세요
     "display": {
       "project": "PAY", "issueType": "Task",
       "summary": "고객센터 조회 화면의 결제번호 정규식 수정",
       "description": "tosspay_ 접두사 가정이 하드코딩되어 있음...",
-      "priority": "High", "labels": ["baton","handover"], "assignee": null
+      "priority": "High", "labels": ["PM Connector","handover"], "assignee": null
     },
 
     // 실제 요청 본문 — JSON.stringify(body, null, 2) 로 코드블록에 뿌리세요
@@ -395,7 +395,7 @@ query 로 좁힐 수도 있습니다: `?direction=OUTGOING`
           "content": [{ "type":"paragraph", "content":[{ "type":"text", "text":"..." }] }]
         },
         "priority": { "name": "High" },
-        "labels": ["baton", "handover"],
+        "labels": ["PM Connector", "handover"],
         "assignee": null
       }
     }
@@ -412,12 +412,12 @@ query 로 좁힐 수도 있습니다: `?direction=OUTGOING`
 
 ```
 ┌──────────────────────────────────────────────────┐
-│ POST https://baton.atlassian.net/rest/api/3/issue│  ← method + url
+│ POST https://pmconnector.atlassian.net/rest/api/3/issue│  ← method + url
 ├────────────────────┬─────────────────────────────┤
 │ 프로젝트   PAY      │ {                           │
 │ 유형       Task     │   "fields": {               │  ← body 를
 │ 우선순위   High     │     "project": {"key":"PAY"}│     JSON 그대로
-│ 라벨       baton    │     ...                     │
+│ 라벨       PM Connector    │     ...                     │
 │ (display 를 표로)   │   }                         │
 │                    │ }                           │
 └────────────────────┴─────────────────────────────┘

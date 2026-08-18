@@ -51,7 +51,7 @@ export const POST = handler(async (req: Request) => {
           provider: "JIRA",
           status: "MOCK",
           displayName: "Jira (데모)",
-          config: { site: "baton.atlassian.net", projectKey: "BAT" },
+          config: { site: "pmconnector.atlassian.net", projectKey: "BAT" },
         },
       },
     },

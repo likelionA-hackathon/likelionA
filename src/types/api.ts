@@ -136,7 +136,7 @@ export type BoardItemDTO = {
  */
 export type JiraPreviewPayload = {
   method: "POST";
-  /** 예: https://baton.atlassian.net/rest/api/3/issue */
+  /** 예: https://pmconnector.atlassian.net/rest/api/3/issue */
   url: string;
   /** 실제 요청 본문. 그대로 복사해서 curl 로 쏘면 이슈가 생성됩니다. */
   body: {

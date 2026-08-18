@@ -312,14 +312,14 @@ export function buildJiraPreview(input: {
   const description = [
     input.body ?? "",
     input.handoverTitle ? `출처 인수인계: ${input.handoverTitle}` : "",
-    "Baton 에서 전달됨",
+    "PM Connector 에서 전달됨",
   ]
     .filter(Boolean)
     .join("\n\n")
     .trim();
 
   const priorityName = JIRA_PRIORITY[input.priority];
-  const labels = ["baton", "handover"];
+  const labels = ["PM Connector", "handover"];
 
   return {
     method: "POST",

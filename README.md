@@ -1,4 +1,4 @@
-# Baton
+# PM Connector
 
 > https://github.com/likelionA-hackathon/likelionA
 > 처음 오셨으면 **[`docs/ONBOARDING.md`](docs/ONBOARDING.md)** 부터 읽으세요.
@@ -175,7 +175,7 @@ npm run db:studio  # Prisma Studio 로 데이터 눈으로 보기
 ```
 
 1. 페이팀이 Notion 에 "PG 교체 1차 이관 완료" 인수인계를 씀
-2. Baton 이 동기화 → AI 가 요약 / 변경사항 / 업무맥락 / 추가확인 으로 쪼갬
+2. PM Connector 가 동기화 → AI 가 요약 / 변경사항 / 업무맥락 / 추가확인 으로 쪼갬
    - "Critical" 표기를 **긴급** 배지로 정규화
 3. 정산팀 대시보드에 **확인 전 2건 · 긴급 1건** 배지
 4. 상세에서 "확인" → AI 가 **다음 업무 초안 3~6개** 생성
