@@ -1,25 +1,55 @@
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { WorkspaceNav } from "./workspace-nav";
+
 /**
  * 워크스페이스 화면 공통 껍데기.
  *
- * /w/[id] 아래 모든 화면(대시보드 · 연결관리 · 인수인계 상세 · 다음업무 · 공유보드)에
- * 자동으로 적용됩니다. 각 화면 컴포넌트는 좌우 여백을 직접 넣지 마세요. 여기서 한 번만 잡습니다.
+ * /w/[id] 아래 모든 화면에 상단 네비게이션과 좌우 여백이 자동으로 붙습니다.
+ * 각 화면 컴포넌트에서 여백을 따로 넣지 마세요.
  *
- * ── 전철우님께
- * 사이드바나 상단 헤더가 필요하면 이 파일에 넣으시면 됩니다.
- * 아래 주석 자리에 넣고 children 을 감싸면 전체 화면에 한 번에 적용됩니다.
- * 이 파일은 공용이라, 고치기 전에 팀방에 한마디 남겨주세요.
+ * 전철우: 상단바 디자인을 바꾸시려면 workspace-nav.tsx 를 고치시면 됩니다.
+ *         공용 파일이라 고치기 전에 팀방에 한마디 남겨주세요.
  */
-export default function WorkspaceLayout({
+export const dynamic = "force-dynamic";
+
+export default async function WorkspaceLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+
+  const workspace = await prisma.workspace
+    .findUnique({ where: { id }, select: { id: true, name: true } })
+    .catch(() => null);
+
+  if (!workspace) notFound();
+
+  // 파트너 팀 이름 — 상단에 "정산팀 ↔ 페이팀" 으로 표시
+  const link = await prisma.link
+    .findFirst({
+      where: { status: "ACTIVE", OR: [{ workspaceAId: id }, { workspaceBId: id }] },
+      include: { workspaceA: { select: { name: true } }, workspaceB: { select: { name: true } } },
+    })
+    .catch(() => null);
+
+  const partnerName = link
+    ? link.workspaceAId === id
+      ? (link.workspaceB?.name ?? null)
+      : link.workspaceA.name
+    : null;
+
   return (
     <div className="min-h-screen bg-white">
-      {/* 사이드바 / 상단 헤더 자리 (전철우) */}
-      <div className="mx-auto w-full max-w-[1200px] px-5 py-8 sm:px-8">
-        {children}
-      </div>
+      <WorkspaceNav
+        workspaceId={workspace.id}
+        workspaceName={workspace.name}
+        partnerName={partnerName}
+      />
+      <div className="mx-auto w-full max-w-[1200px] px-5 py-8 sm:px-8">{children}</div>
     </div>
   );
 }
