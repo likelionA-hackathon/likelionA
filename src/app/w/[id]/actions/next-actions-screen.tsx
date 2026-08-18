@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
 import type { NextActionDTO, PriorityBadge, PriorityCode } from "@/types/api";
 
@@ -23,11 +23,9 @@ const PRIORITY_OPTIONS: Array<{ value: PriorityFilter; label: string }> = [
   { value: "LOW", label: "낮음" },
 ];
 
-const NEXT_STATUS: Record<ActionStatus, ActionStatus[]> = {
-  TODO: ["TODO", "DOING"],
-  DOING: ["DOING", "DONE"],
-  DONE: ["DONE"],
-};
+// 상태는 어느 방향으로든 바꿀 수 있어야 합니다.
+// 앞으로만 갈 수 있으면 실수로 완료 처리했을 때 되돌릴 방법이 없습니다.
+const ALL_STATUS: ActionStatus[] = ["TODO", "DOING", "DONE"];
 
 const EMPTY_FORM = {
   title: "",
@@ -51,11 +49,13 @@ function formatDate(value: string | null) {
 }
 
 function PriorityPill({ priority }: { priority: PriorityBadge }) {
+  // 4단계가 눈으로 구분되어야 합니다. (기존에는 orange 와 slate 가 완전히 동일했습니다)
+  // 인수인계 상세 화면과 같은 팔레트입니다.
   const classes: Record<PriorityBadge["tone"], string> = {
     red: "border-[#111] bg-[#111] text-white",
-    orange: "border-[#d4d4d4] bg-[#f6f6f6] text-[#111]",
-    slate: "border-[#d4d4d4] bg-[#f6f6f6] text-[#111]",
-    gray: "border-[#dedede] bg-white text-[#6b6b6b]",
+    orange: "border-[#2a2a2a] bg-white text-[#111]",
+    slate: "border-[#d4d4d4] bg-[#f4f4f4] text-[#333]",
+    gray: "border-[#e2e2e2] bg-[#f7f7f7] text-[#666]",
   };
 
   return (
@@ -85,7 +85,7 @@ function StatusSelect({
       onChange={(event) => onChange(event.target.value as ActionStatus)}
       className="h-7 min-w-[64px] appearance-none rounded-full border border-[#dbdbdb] bg-[#f6f6f6] px-3 text-center text-[11px] font-bold text-[#111] outline-none focus:border-[#7c3aed] focus:ring-2 focus:ring-[#ede9fe] disabled:cursor-wait disabled:text-[#9e9e9e]"
     >
-      {NEXT_STATUS[action.status].map((status) => (
+      {ALL_STATUS.map((status) => (
         <option key={status} value={status}>{statusLabel(status)}</option>
       ))}
     </select>
@@ -243,6 +243,7 @@ export function NextActionsScreen({ workspaceId }: Props) {
   const [priority, setPriority] = useState<PriorityFilter>("ALL");
   const [assignee, setAssignee] = useState("ALL");
   const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
@@ -264,6 +265,23 @@ export function NextActionsScreen({ workspaceId }: Props) {
   }, [workspaceId]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // 필터 패널은 바깥을 클릭하거나 Esc 를 누르면 닫힙니다.
+  useEffect(() => {
+    if (!filterOpen) return;
+    function onPointerDown(event: MouseEvent) {
+      if (!filterRef.current?.contains(event.target as Node)) setFilterOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setFilterOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filterOpen]);
 
   const counts = useMemo(() => {
     const result: Record<ActionStatus, number> = { TODO: 0, DOING: 0, DONE: 0 };
@@ -372,7 +390,7 @@ export function NextActionsScreen({ workspaceId }: Props) {
                     className="h-9 w-full rounded-[7px] border border-[#dbdbdb] bg-white px-3.5 text-[12px] outline-none placeholder:text-[#9e9e9e] focus:border-[#7c3aed] focus:ring-2 focus:ring-[#ede9fe] sm:w-[200px]"
                   />
                 </label>
-                <div className="relative">
+                <div className="relative" ref={filterRef}>
                   <button
                     type="button"
                     aria-expanded={filterOpen}

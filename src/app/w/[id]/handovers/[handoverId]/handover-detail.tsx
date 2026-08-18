@@ -15,12 +15,6 @@ type ApiEnvelope<T> =
   | { ok: true; data: T }
   | { ok: false; error: { code?: string; message?: string; details?: unknown } };
 
-const CHANGE_BADGE: Record<HandoverChangeDTO["type"], string> = {
-  added: "완료",
-  changed: "공유팀",
-  removed: "확정",
-};
-
 const PRIORITY_STYLE: Record<string, string> = {
   red: "border-[#111] bg-[#111] text-white",
   orange: "border-[#2a2a2a] bg-white text-[#111]",
@@ -143,7 +137,7 @@ function ChangesPanel({ changes }: { changes: HandoverChangeDTO[] }) {
             <p className="text-xs font-bold text-[#111]">{change.text}</p>
             {change.impact ? <p className="mt-1 line-clamp-1 text-[11px] text-[#6b6b6b]">{change.impact}</p> : null}
           </div>
-          <span className="shrink-0 rounded-full border border-[#d8d8d8] bg-[#f8f8f8] px-3 py-1 text-[10px] font-bold text-[#222]">{CHANGE_BADGE[change.type]}</span>
+          <span className="shrink-0 rounded-full border border-[#d8d8d8] bg-[#f8f8f8] px-3 py-1 text-[10px] font-bold text-[#222]">{change.typeLabel}</span>
         </div>
       ))}
     </div>
