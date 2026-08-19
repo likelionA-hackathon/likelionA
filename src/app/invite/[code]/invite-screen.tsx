@@ -79,10 +79,10 @@ export function InviteScreen({ code }: { code: string }) {
           <div className="mt-6">
             <p className="text-xs text-[#777]">먼저 내 팀을 만들어야 합니다.</p>
             <Link
-              href="/onboarding"
+              href={`/onboarding?invite=${encodeURIComponent(code)}`}
               className="mt-4 inline-flex h-10 items-center rounded-md bg-black px-6 text-xs font-bold text-white"
             >
-              팀 만들기
+              내 팀 만들고 연결하기
             </Link>
           </div>
         ) : (
