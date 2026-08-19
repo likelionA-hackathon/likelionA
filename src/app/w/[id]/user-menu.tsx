@@ -1,11 +1,14 @@
 "use client";
 
-import { signOut } from "next-auth/react";
-import { useState } from "react";
+import { LogoutButton } from "./logout-button";
 
 /**
  * 사이드바 하단 계정 영역.
- * 게스트로 들어온 사람도 여기서 나가서 실제 Google 로그인으로 갈아탈 수 있어야 합니다.
+ *
+ * 로그아웃 버튼 자체는 전철우님이 만든 LogoutButton 을 그대로 씁니다.
+ * 여기서는 "지금 누구로 보고 있는지"만 위에 얹습니다.
+ * 게스트로 둘러보는 사람이 자기가 게스트인 걸 모르면
+ * 데모 데이터를 자기 팀 데이터로 착각하기 때문입니다.
  */
 export function UserMenu({
   name,
@@ -16,8 +19,6 @@ export function UserMenu({
   email: string;
   isGuest: boolean;
 }) {
-  const [loading, setLoading] = useState(false);
-
   return (
     <div className="mt-4 border-t border-[#e5e5e5] pt-4">
       <div className="flex items-center gap-2">
@@ -29,17 +30,10 @@ export function UserMenu({
         ) : null}
       </div>
       <p className="mt-0.5 truncate text-[9px] text-[#999]">{email}</p>
-      <button
-        type="button"
-        disabled={loading}
-        onClick={() => {
-          setLoading(true);
-          void signOut({ redirectTo: "/login" });
-        }}
-        className="mt-2 h-7 w-full rounded-md border border-[#dedede] text-[10px] font-bold text-[#666] hover:bg-[#f0f0f0] disabled:opacity-60"
-      >
-        {loading ? "로그아웃 중..." : isGuest ? "게스트 종료" : "로그아웃"}
-      </button>
+      {isGuest ? (
+        <p className="mt-1 text-[9px] leading-4 text-[#999]">예시 데이터가 있는 팀을 둘러보는 중입니다.</p>
+      ) : null}
+      <LogoutButton />
     </div>
   );
 }

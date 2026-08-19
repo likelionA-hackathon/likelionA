@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 import { WorkspaceNav } from "./workspace-nav";
 import { UserMenu } from "./user-menu";
-import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
