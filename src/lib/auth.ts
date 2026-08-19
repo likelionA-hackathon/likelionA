@@ -54,7 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   callbacks: {
-    async signIn({ user }) {
+    async signIn({ user, account }) {
       if (!user.email) return false;
 
       const dbUser = await prisma.user.upsert({
@@ -70,7 +70,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         },
       });
 
-      await autoJoinDemoWorkspace(dbUser.id);
+      // 데모 워크스페이스 자동 참여는 게스트에게만 적용합니다.
+      // 실제 Google 로그인은 빈 상태에서 시작해 온보딩(팀 생성)을 거칩니다.
+      if (account?.provider === "guest") {
+        await joinDemoWorkspace(dbUser.id);
+      }
+
       return true;
     },
     async jwt({ token }) {
@@ -93,30 +98,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 });
 
 /**
- * 데모 워크스페이스 자동 참여.
+ * 게스트를 데모 워크스페이스에 넣습니다.
  *
- * 심사위원이 자기 Google 계정으로 로그인하면, 소속 워크스페이스가 없어서
- * 온보딩 화면만 보고 데모 데이터를 하나도 못 봅니다.
- * 그래서 워크스페이스가 하나도 없는 새 사용자는 데모 팀에 자동으로 넣어줍니다.
- * 테스트 계정을 따로 배포할 필요가 없어집니다.
+ * 두 갈래를 분리하는 것이 핵심입니다.
+ *   게스트("테스트 해보기")  → 데모 데이터가 채워진 팀으로. 둘러보기 전용
+ *   실제 Google 로그인       → 소속 없음 → 온보딩에서 직접 팀을 만들고 실제로 사용
  *
- *   DEMO_AUTO_JOIN="true"          켜고 끄기 (실서비스라면 꺼야 함)
- *   DEMO_WORKSPACE_SLUG="settle-team"  어느 팀에 넣을지. 데모 데이터가 있는 쪽
+ * 예전에는 모든 로그인을 데모 팀에 넣었는데, 그러면
+ *   ① 실제 온보딩 흐름을 아무도 겪어볼 수 없고
+ *   ② 로그인한 사람들이 데모 데이터를 함께 망가뜨립니다.
  *
- * 권한은 MEMBER 로만 줍니다. 워크스페이스 설정을 못 건드리게.
+ *   DEMO_AUTO_JOIN="true"              게스트 자동 참여 켜기/끄기
+ *   DEMO_WORKSPACE_SLUG="settle-team"  데모 데이터가 있는 팀
  */
-async function autoJoinDemoWorkspace(userId: string) {
+async function joinDemoWorkspace(userId: string) {
   if (process.env.DEMO_AUTO_JOIN !== "true") return;
 
   const existing = await prisma.membership.count({ where: { userId } });
-  if (existing > 0) return; // 이미 소속이 있으면 건드리지 않는다
+  if (existing > 0) return;
 
   const slug = process.env.DEMO_WORKSPACE_SLUG || "settle-team";
   const workspace = await prisma.workspace.findUnique({
     where: { slug },
     select: { id: true },
   });
-  if (!workspace) return; // seed 가 아직 안 돌았을 수 있다. 조용히 넘어감
+  if (!workspace) return; // seed 가 아직 안 돌았을 수 있다
 
   await prisma.membership
     .create({ data: { userId, workspaceId: workspace.id, role: "MEMBER" } })

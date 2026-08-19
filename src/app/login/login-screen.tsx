@@ -10,6 +10,7 @@ const AUTH_ERROR_MESSAGE: Record<string, string> = {
   OAuthCallback: "Google 로그인 응답을 처리하지 못했습니다.",
   OAuthAccountNotLinked: "이미 다른 로그인 방식으로 가입된 이메일입니다.",
   Callback: "로그인 처리 중 오류가 발생했습니다.",
+  CredentialsSignin: "게스트 로그인이 비활성화되어 있습니다.",
   Default: "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
 };
 
@@ -17,12 +18,15 @@ export function LoginScreen({
   callbackUrl = "/",
   errorCode,
   oauthConfigured,
+  guestEnabled = false,
 }: {
   callbackUrl?: string;
   errorCode?: string;
   oauthConfigured: boolean;
+  /** DEMO_GUEST_LOGIN 이 켜져 있을 때만 게스트 버튼을 보여줍니다. */
+  guestEnabled?: boolean;
 }) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<null | "google" | "guest">(null);
   const [clientError, setClientError] = useState<string | null>(null);
   const safeCallbackUrl = callbackUrl.startsWith("/") ? callbackUrl : "/";
   const authError = errorCode
@@ -30,13 +34,24 @@ export function LoginScreen({
     : null;
 
   async function startGoogleLogin() {
-    setLoading(true);
+    setLoading("google");
     setClientError(null);
     try {
       await signIn("google", { redirectTo: safeCallbackUrl });
     } catch {
       setClientError("Google 로그인 페이지를 열지 못했습니다. 다시 시도해 주세요.");
-      setLoading(false);
+      setLoading(null);
+    }
+  }
+
+  async function startGuestLogin() {
+    setLoading("guest");
+    setClientError(null);
+    try {
+      await signIn("guest", { redirectTo: safeCallbackUrl });
+    } catch {
+      setClientError("게스트 로그인에 실패했습니다. 다시 시도해 주세요.");
+      setLoading(null);
     }
   }
 
@@ -55,17 +70,37 @@ export function LoginScreen({
         </p>
         <button
           type="button"
-          disabled={loading || !oauthConfigured}
+          disabled={loading !== null || !oauthConfigured}
           onClick={() => void startGoogleLogin()}
           className="mt-8 flex h-11 w-full items-center justify-center gap-3 rounded-md border border-[#d8d8d8] bg-white text-xs font-bold hover:bg-[#f8f8f8] disabled:opacity-60"
         >
           <span className="text-base font-bold text-[#4285f4]">G</span>
-          {loading ? "로그인 중..." : "Google 계정으로 계속하기"}
+          {loading === "google" ? "로그인 중..." : "Google 계정으로 계속하기"}
         </button>
         {!oauthConfigured ? (
           <p role="alert" className="mt-4 rounded-md bg-[#fff7ed] px-3 py-2 text-[10px] leading-4 text-[#9a3412]">
             Google OAuth 설정이 필요합니다. 환경변수를 설정한 뒤 서버를 다시 시작해 주세요.
           </p>
+        ) : null}
+        {guestEnabled ? (
+          <>
+            <div className="mt-5 flex items-center gap-3">
+              <span className="h-px flex-1 bg-[#e8e8e8]" />
+              <span className="text-[10px] text-[#aaa]">또는</span>
+              <span className="h-px flex-1 bg-[#e8e8e8]" />
+            </div>
+            <button
+              type="button"
+              disabled={loading !== null}
+              onClick={() => void startGuestLogin()}
+              className="mt-5 h-11 w-full rounded-md border border-[#7c3aed] bg-[#f7f3ff] text-xs font-bold text-[#5b21b6] hover:bg-[#f0e9ff] disabled:opacity-60"
+            >
+              {loading === "guest" ? "들어가는 중..." : "로그인 없이 테스트해보기"}
+            </button>
+            <p className="mt-2 text-[9px] leading-4 text-[#999]">
+              예시 데이터가 채워진 팀으로 들어갑니다. 가입 없이 모든 기능을 둘러볼 수 있습니다.
+            </p>
+          </>
         ) : null}
         {authError || clientError ? (
           <p role="alert" className="mt-4 rounded-md bg-[#fff1f1] px-3 py-2 text-[10px] leading-4 text-[#b42318]">

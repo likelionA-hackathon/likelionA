@@ -72,11 +72,11 @@ export function DashboardScreen({ workspaceId }: Props) {
         <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {summaryCards.map(([label, value], index) => <article key={label} className={`min-h-20 rounded-md border p-3 ${index > 1 ? "border-[#a78bfa] bg-[#faf8ff]" : "border-[#dedede]"}`}><p className="text-[10px] text-[#666]">{label}</p><p className={`mt-2 text-xl font-extrabold ${index > 1 ? "text-[#7c3aed]" : "text-black"}`}>{value}</p></article>)}
         </div>
-        <button type="button" disabled className="h-8 shrink-0 rounded-sm border border-[#ddd] px-5 text-[10px] font-bold text-[#666]">공유 보드 보기</button>
+        <Link href={`/w/${workspaceId}/board`} className="flex h-8 shrink-0 items-center rounded-sm border border-[#ddd] px-5 text-[10px] font-bold text-[#666] hover:bg-[#f7f7f7]">공유 보드 보기</Link>
       </section>
 
       <section className="mt-7">
-        <div className="flex items-center justify-between"><h2 className="text-[13px] font-extrabold text-[#6d28d9]">AI가 정리한 인수인계</h2><span className="text-[9px] text-[#777]">전체 보기</span></div>
+        <div className="flex items-center justify-between"><h2 className="text-[13px] font-extrabold text-[#6d28d9]">AI가 정리한 인수인계</h2><Link href={`/w/${workspaceId}/handovers`} className="text-[9px] text-[#777] hover:underline">전체 보기</Link></div>
         <div className="mt-3 space-y-2">
           {recentHandovers.length === 0 ? <div className="rounded-md border border-[#e2e2e2] py-10 text-center text-[11px] text-[#777]">아직 도착한 인수인계가 없습니다.</div> : recentHandovers.slice(0, 5).map((handover) => (
             <Link key={handover.id} href={`/w/${workspaceId}/handovers/${handover.id}`} className="grid min-h-[62px] grid-cols-[18px_minmax(0,1fr)_auto_14px] items-center gap-3 rounded-md border border-[#e1e1e1] px-3 py-2.5 hover:bg-[#fafafa]">

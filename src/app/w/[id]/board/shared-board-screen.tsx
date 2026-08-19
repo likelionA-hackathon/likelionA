@@ -407,11 +407,42 @@ export function SharedBoardScreen({ workspaceId }: Props) {
             </div>
           </div>
 
+          {/*
+            실제 Jira Cloud REST API v3 요청 본문을 그대로 보여줍니다.
+            "형식은 정확하고 인증만 남았다" 를 화면으로 증명하는 부분입니다.
+            targetPayload.body 는 복사해서 curl 로 쏘면 실제 이슈가 생성되는 형태입니다.
+          */}
+          {previewItems[0].targetPayload ? (
+            <div className="mt-5 border-t border-[#ddd3ef] pt-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-[11px] font-bold text-[#5b21b6]">전송될 요청</p>
+                <p className="text-[10px] text-[#6b6b6b]">
+                  Jira Cloud REST API v3 규격 · 인증 연결만 남았습니다
+                </p>
+              </div>
+
+              <p className="mt-2 break-all rounded-md bg-white px-3 py-2 font-mono text-[11px] text-[#111]">
+                <span className="font-bold text-[#5b21b6]">{previewItems[0].targetPayload.method}</span>{" "}
+                {previewItems[0].targetPayload.url}
+              </p>
+
+              <pre className="mt-2 max-h-52 overflow-auto rounded-md bg-[#1f1b2e] px-3 py-3 font-mono text-[10px] leading-[1.5] text-[#e7e0ff]">
+{JSON.stringify(previewItems[0].targetPayload.body, null, 2)}
+              </pre>
+
+              {previewItems.length > 1 ? (
+                <p className="mt-2 text-[10px] text-[#6b6b6b]">
+                  선택한 {previewItems.length}건 중 첫 번째 요청입니다. 나머지도 같은 형식으로 생성됩니다.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="mt-5 flex items-end justify-between gap-3 border-t border-[#ddd3ef] pt-4">
             <div>
               <p className="text-[11px] text-[#5b21b6]">공유 내용</p>
               <p className="mt-1 text-[12px] font-bold">제목 · 설명 · 우선순위 · 담당</p>
-              <p className="mt-2 text-[10px] text-[#6b6b6b]">실제 Jira 쓰기 없이 앱 내부 상태만 전달됨으로 변경합니다.</p>
+              <p className="mt-2 text-[10px] text-[#6b6b6b]">이번 버전은 실제 Jira 쓰기 없이 앱 내부 상태만 전달됨으로 변경합니다.</p>
             </div>
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setPreviewIds(new Set())} disabled={sharing} className="h-9 rounded-[7px] border border-[#dbdbdb] bg-white px-5 text-[12px] font-bold text-[#555] hover:bg-[#f6f6f6]">취소</button>
