@@ -18,6 +18,21 @@ function formatDate(value: string | null) {
   return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit" }).format(date);
 }
 
+function getGreeting() {
+  // TODO: Workspace.timezone이 API에 추가되면 Asia/Seoul 대신 해당 값을 사용합니다.
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Seoul",
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).format(new Date()),
+  );
+
+  if (hour < 12) return "좋은 아침입니다";
+  if (hour < 18) return "좋은 오후입니다";
+  return "좋은 저녁입니다";
+}
+
 export function DashboardScreen({ workspaceId }: Props) {
   const [dashboard, setDashboard] = useState<DashboardDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,16 +66,13 @@ export function DashboardScreen({ workspaceId }: Props) {
   if (error || !dashboard) return <div className="py-24 text-center"><p className="text-sm font-bold">{error ?? "대시보드 정보가 없습니다."}</p><button type="button" onClick={() => void load()} className="mt-4 rounded-md bg-black px-5 py-2 text-xs font-bold text-white">다시 시도</button></div>;
 
   const { workspace, stats, badges, recentHandovers, todayActions } = dashboard;
-  // 라벨은 API 가 주는 값의 실제 의미와 맞춰야 합니다.
-  //   openActions  = 끝나지 않은 업무 전체 (AI 생성 + 수동 추가)
-  //   openRequests = 상대 팀이 보내와 우리가 답해야 할 정보요청
-  const summaryCards = [["신규 인수인계", stats.newHandovers], ["긴급 인수인계", stats.urgentHandovers], ["진행 중 업무", stats.openActions], ["답할 요청", stats.openRequests]] as const;
+  const summaryCards = [["신규 인수인계", stats.newHandovers], ["다음 업무", stats.openActions], ["추가 확인 필요", stats.openRequests]] as const;
   const notifications = [{ label: "새 인수인계", count: badges.unreadHandovers }, { label: "정보 요청", count: badges.incomingRequests }, { label: "공유 보드", count: badges.incomingBoardItems }].filter((item) => item.count > 0);
 
   return (
     <main className="pb-14">
       <header className="flex items-center justify-between border-b border-[#e5e5e5] pb-5">
-        <div><p className="text-[10px] font-semibold text-[#888]">{workspace.tagline ?? "파트너 팀 업무 연결 보드"}</p><h1 className="mt-1 text-lg font-extrabold tracking-[-0.03em]">{workspace.name}</h1></div>
+        <div><h1 className="text-lg font-extrabold tracking-[-0.03em]">{getGreeting()}, {workspace.name}</h1><p className="mt-1 text-[10px] font-semibold text-[#888]">오늘 확인할 인수인계와 다음 업무를 한눈에 확인하세요.</p></div>
         <button type="button" disabled={syncing} onClick={() => void syncNotion()} className="h-8 rounded-md border border-[#d9d9d9] px-4 text-[10px] font-bold hover:bg-[#f7f7f7] disabled:opacity-50">{syncing ? "동기화 중..." : "동기화"}</button>
       </header>
       {syncMessage ? <p className="mt-4 rounded-md bg-[#f0fdf4] px-4 py-2 text-[10px] text-[#166534]">{syncMessage}</p> : null}
@@ -69,10 +81,10 @@ export function DashboardScreen({ workspaceId }: Props) {
       {notifications.length > 0 ? <div aria-label="새 알림" className="mt-4 flex flex-wrap gap-2">{notifications.map(({ label, count }) => <span key={label} className="rounded-full bg-[#f3f0ff] px-3 py-1.5 text-[9px] font-bold text-[#6d28d9]">{label} {count}</span>)}</div> : null}
 
       <section aria-label="업무 요약" className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {summaryCards.map(([label, value], index) => <article key={label} className={`min-h-20 rounded-md border p-3 ${index > 1 ? "border-[#a78bfa] bg-[#faf8ff]" : "border-[#dedede]"}`}><p className="text-[10px] text-[#666]">{label}</p><p className={`mt-2 text-xl font-extrabold ${index > 1 ? "text-[#7c3aed]" : "text-black"}`}>{value}</p></article>)}
+        <div className="grid flex-1 gap-3 sm:grid-cols-3">
+          {summaryCards.map(([label, value]) => <article key={label} className="min-h-20 rounded-md border border-[#dedede] p-3"><p className="text-[10px] text-[#666]">{label}</p><p className="mt-2 text-xl font-extrabold text-black">{value}</p></article>)}
         </div>
-        <button type="button" disabled className="h-8 shrink-0 rounded-sm border border-[#ddd] px-5 text-[10px] font-bold text-[#666]">공유 보드 보기</button>
+        <Link href={`/w/${workspaceId}/board`} className="flex h-8 shrink-0 items-center rounded-sm border border-[#ddd] px-5 text-[10px] font-bold text-[#666] hover:bg-[#f7f7f7] hover:text-black">공유 보드 보기</Link>
       </section>
 
       <section className="mt-7">
