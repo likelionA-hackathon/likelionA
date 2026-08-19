@@ -38,6 +38,8 @@ Import 화면의 **Environment Variables** 를 펼치고 아래를 넣습니다.
 | `NOTION_DATABASE_ID` | `.env` 와 동일 | 위와 동일 |
 | `AUTH_SECRET` | `npx auth secret` 결과 | 로그인 붙일 때 필요 |
 | `AUTH_URL` | 배포 후 받은 주소 | 로그인 붙일 때 필요 |
+| `DEMO_AUTO_JOIN` | `true` | **없으면 심사위원이 로그인해도 빈 화면만 봅니다** |
+| `DEMO_WORKSPACE_SLUG` | `settle-team` | 데모 데이터가 있는 팀 |
 
 > `NEXT_PUBLIC_BASE_URL` 은 **넣지 않아도 됩니다.**
 > Vercel 이 주는 `VERCEL_URL` 을 코드가 알아서 씁니다.
@@ -82,3 +84,4 @@ JSON 이 나오면 성공입니다. 안 나오면 Vercel 대시보드의
 - [ ] Google OAuth 승인된 리디렉션 URI 에
       `https://<주소>/api/auth/callback/google` 추가
 - [ ] 데모 직전 아무 API 나 한 번 호출해 Neon 을 깨워두기
+- [ ] `DEMO_AUTO_JOIN` 이 켜져 있는지 확인 (심사위원 로그인 시 데모 데이터가 보여야 함)

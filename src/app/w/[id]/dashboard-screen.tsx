@@ -51,7 +51,10 @@ export function DashboardScreen({ workspaceId }: Props) {
   if (error || !dashboard) return <div className="py-24 text-center"><p className="text-sm font-bold">{error ?? "대시보드 정보가 없습니다."}</p><button type="button" onClick={() => void load()} className="mt-4 rounded-md bg-black px-5 py-2 text-xs font-bold text-white">다시 시도</button></div>;
 
   const { workspace, stats, badges, recentHandovers, todayActions } = dashboard;
-  const summaryCards = [["신규 인수인계", stats.newHandovers], ["긴급 인수인계", stats.urgentHandovers], ["AI 다음 업무", stats.openActions], ["AI 확인 제안", stats.openRequests]] as const;
+  // 라벨은 API 가 주는 값의 실제 의미와 맞춰야 합니다.
+  //   openActions  = 끝나지 않은 업무 전체 (AI 생성 + 수동 추가)
+  //   openRequests = 상대 팀이 보내와 우리가 답해야 할 정보요청
+  const summaryCards = [["신규 인수인계", stats.newHandovers], ["긴급 인수인계", stats.urgentHandovers], ["진행 중 업무", stats.openActions], ["답할 요청", stats.openRequests]] as const;
   const notifications = [{ label: "새 인수인계", count: badges.unreadHandovers }, { label: "정보 요청", count: badges.incomingRequests }, { label: "공유 보드", count: badges.incomingBoardItems }].filter((item) => item.count > 0);
 
   return (
@@ -75,7 +78,7 @@ export function DashboardScreen({ workspaceId }: Props) {
       <section className="mt-7">
         <div className="flex items-center justify-between"><h2 className="text-[13px] font-extrabold text-[#6d28d9]">AI가 정리한 인수인계</h2><span className="text-[9px] text-[#777]">전체 보기</span></div>
         <div className="mt-3 space-y-2">
-          {recentHandovers.length === 0 ? <div className="rounded-md border border-[#e2e2e2] py-10 text-center text-[11px] text-[#777]">아직 도착한 인수인계가 없습니다.</div> : recentHandovers.slice(0, 3).map((handover) => (
+          {recentHandovers.length === 0 ? <div className="rounded-md border border-[#e2e2e2] py-10 text-center text-[11px] text-[#777]">아직 도착한 인수인계가 없습니다.</div> : recentHandovers.slice(0, 5).map((handover) => (
             <Link key={handover.id} href={`/w/${workspaceId}/handovers/${handover.id}`} className="grid min-h-[62px] grid-cols-[18px_minmax(0,1fr)_auto_14px] items-center gap-3 rounded-md border border-[#e1e1e1] px-3 py-2.5 hover:bg-[#fafafa]">
               <span aria-hidden className="h-3 w-3 rounded-[2px] border border-[#bdbdbd]" /><div className="min-w-0"><p className="truncate text-[11px] font-extrabold">{handover.title}</p><p className="mt-1 truncate text-[9px] text-[#777]">{handover.from?.name ?? "내부 팀"} → 다음 업무 {handover.nextActionCount}개</p></div><PriorityBadgeView priority={handover.priority} /><span aria-hidden className="text-sm text-[#888]">›</span>
             </Link>
