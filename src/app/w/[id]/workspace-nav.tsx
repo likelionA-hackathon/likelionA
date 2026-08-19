@@ -7,7 +7,7 @@ const navigation = [
   { label: "대시보드", href: "" },
   { label: "인수인계" },
   { label: "다음 업무", href: "/actions" },
-  { label: "공유 보드" },
+  { label: "공유 보드", href: "/board" },
   { label: "AI 업무 정의" },
   { label: "연결 관리", href: "/connections" },
 ];
