@@ -73,7 +73,7 @@ async function main() {
     } else ok("개발용 인증 우회 켜짐");
 
     if (!env.DEV_USER_EMAIL) {
-      warn("DEV_USER_EMAIL 비어 있음", 'DEV_USER_EMAIL="jiwoo@baton.dev" 를 넣으면 헤더 없이도 API 를 부를 수 있습니다.');
+      warn("DEV_USER_EMAIL 비어 있음", 'DEV_USER_EMAIL="jiwoo@baton.dev" 를 넣으면 스크립트가 이 계정으로 API 를 부릅니다.');
     }
 
     const aiKey = env.OPENAI_API_KEY || env.GEMINI_API_KEY || env.ANTHROPIC_API_KEY;

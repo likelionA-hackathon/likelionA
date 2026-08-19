@@ -77,7 +77,7 @@ x-baton-user: jiwoo@baton.dev      → 정산팀 (인수인계 받는 쪽. 화�
 x-baton-user: cheolwoo@baton.dev   → 페이팀 (넘기는 쪽)
 ```
 
-헤더를 안 주면 `.env` 의 `DEV_USER_EMAIL` 사용자로 동작합니다.
+헤더가 없으면 로그인 세션이 필요합니다. (예전에는 `DEV_USER_EMAIL` 로 대체했지만, 로그아웃이 무력화돼서 없앴습니다.)
 NextAuth 로그인이 붙은 뒤에는 세션이 우선이라, 이 헤더는 무시됩니다.
 
 ### 우선순위 배지

@@ -43,11 +43,7 @@ export default async function WorkspaceLayout({ children, params }: { children: 
               {partnerName ? `${partnerName} 와 연결됨` : "연결된 팀 없음"}
             </p>
             {currentUser ? (
-              <UserMenu
-                name={currentUser.name}
-                email={currentUser.email}
-                isGuest={currentUser.email === (process.env.DEMO_GUEST_EMAIL || "guest@pmconnector.dev")}
-              />
+              <UserMenu name={currentUser.name} email={currentUser.email} via={currentUser.via} />
             ) : null}
           </div>
         </div>

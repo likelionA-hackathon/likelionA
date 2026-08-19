@@ -54,7 +54,7 @@ const dash = await api.dashboard(workspaceId);   // DashboardDTO
 |---|---|
 | NextAuth 세션 있음 | 세션의 사용자로 동작 |
 | 세션 없고 `DEV_AUTH_BYPASS="true"` | 요청 헤더 `x-baton-user: <이메일>` 의 사용자로 동작 |
-| 헤더도 없음 | `.env` 의 `DEV_USER_EMAIL` 사용자로 동작 |
+| 헤더도 없음 | 401. 브라우저 화면은 항상 실제 로그인 세션이 필요합니다 |
 | 전부 없음 | `401 UNAUTHENTICATED` |
 
 개발용 계정 (seed 로 생성됨)
