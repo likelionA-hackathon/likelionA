@@ -145,11 +145,31 @@ GEMINI_MODEL="gemini-3.5-flash"
 
 ## Google OAuth 붙이기 (전철우)
 
-1. https://console.cloud.google.com → API 및 서비스 → 사용자 인증 정보
-2. OAuth 클라이언트 ID 만들기 (웹 애플리케이션)
-3. 승인된 리디렉션 URI: `http://localhost:3000/api/auth/callback/google`
-4. `.env` 에 `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_SECRET` 채우기
+1. https://console.cloud.google.com 에서 프로젝트를 만들고 **Google Auth Platform** 설정
+2. Branding 에 앱 이름·지원 이메일을 입력하고 Audience 를 선택
+   - External + Testing 이면 로그인할 Google 계정을 Test users 에 추가
+3. Clients 에서 **Web application** OAuth 클라이언트 생성
+4. Authorized JavaScript origins 에 `http://localhost:3000` 등록
+5. Authorized redirect URIs 에 `http://localhost:3000/api/auth/callback/google` 등록
+   - 스킴·호스트·포트·경로가 한 글자라도 다르면 `redirect_uri_mismatch` 가 발생함
+6. `.env` 에 `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_SECRET` 채우기
    - `AUTH_SECRET` 은 `npx auth secret` 으로 생성
+   - OAuth 테스트 때는 `DEV_AUTH_BYPASS="false"` 로 변경
+7. 서버를 재시작하고 `http://localhost:3000/login` 에서 로그인
+
+배포할 때는 Google Cloud 에 배포 주소도 별도로 등록합니다.
+
+```text
+Authorized JavaScript origin: https://your-domain.example
+Authorized redirect URI:      https://your-domain.example/api/auth/callback/google
+```
+
+```env
+AUTH_URL="https://your-domain.example"
+DEV_AUTH_BYPASS="false"
+```
+
+Client Secret 은 Git 에 커밋하지 말고 배포 서비스의 환경변수에만 저장하세요.
 
 ---
 
