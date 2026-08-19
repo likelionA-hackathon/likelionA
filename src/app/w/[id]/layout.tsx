@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { WorkspaceNav } from "./workspace-nav";
+import { LogoutButton } from "./logout-button";
 
 export default async function WorkspaceLayout({ children, params }: { children: React.ReactNode; params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,6 +12,7 @@ export default async function WorkspaceLayout({ children, params }: { children: 
           <WorkspaceNav workspaceId={id} />
           <div className="mt-auto hidden border-t border-[#e5e5e5] pt-5 lg:block">
             <p className="text-[11px] font-bold">팀 이름</p><p className="mt-1 text-[10px] text-[#777]">워크스페이스</p><p className="mt-4 text-[10px] text-[#777]">연결된 팀 있음</p>
+            <LogoutButton />
           </div>
         </div>
       </aside>
