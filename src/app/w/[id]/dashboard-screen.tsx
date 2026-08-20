@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api-client";
+import { GettingStarted } from "./getting-started";
 import type { DashboardDTO, PriorityBadge } from "@/types/api";
 
 type Props = { workspaceId: string };
@@ -79,6 +80,8 @@ export function DashboardScreen({ workspaceId }: Props) {
       {syncError ? <p role="alert" className="mt-4 rounded-md bg-[#fff1f1] px-4 py-2 text-[10px] text-[#b42318]">{syncError}</p> : null}
       {syncWarnings.map((warning) => <p key={warning} className="mt-2 rounded-md bg-[#fffaeb] px-4 py-2 text-[10px] text-[#854d0e]">{warning}</p>)}
       {notifications.length > 0 ? <div aria-label="새 알림" className="mt-4 flex flex-wrap gap-2">{notifications.map(({ label, count }) => <span key={label} className="rounded-full bg-[#f3f0ff] px-3 py-1.5 text-[9px] font-bold text-[#6d28d9]">{label} {count}</span>)}</div> : null}
+
+      {recentHandovers.length === 0 ? <GettingStarted workspaceId={workspaceId} onChanged={() => void load()} /> : null}
 
       <section aria-label="업무 요약" className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="grid flex-1 gap-3 sm:grid-cols-3">
