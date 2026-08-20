@@ -11,6 +11,7 @@
     "db:seed:clean": "tsx prisma/seed.ts --skeleton",
     "db:reset": "prisma db push --force-reset && npm run db:seed",
     "db:studio": "prisma studio",
+    "demo:join": "tsx scripts/join-demo.ts",
     "demo:leave": "tsx scripts/leave-demo.ts",
     "doctor": "node scripts/doctor.mjs",
     "smoke": "node scripts/smoke.mjs",
