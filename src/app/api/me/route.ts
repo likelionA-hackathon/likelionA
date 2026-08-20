@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { toWorkspaceDTO } from "@/lib/serialize";
 import { handler, ok } from "@/lib/http";
 import { requireUser } from "@/lib/session";
 import type { WorkspaceDTO } from "@/types/api";
@@ -18,14 +19,9 @@ export const GET = handler(async (req: Request) => {
     orderBy: { createdAt: "asc" },
   });
 
-  const workspaces: WorkspaceDTO[] = memberships.map((m) => ({
-    id: m.workspace.id,
-    name: m.workspace.name,
-    slug: m.workspace.slug,
-    tagline: m.workspace.tagline,
-    role: m.role,
-    memberCount: m.workspace._count.members,
-  }));
+  const workspaces: WorkspaceDTO[] = memberships.map((m) =>
+    toWorkspaceDTO(m.workspace, m.role, m.workspace._count.members),
+  );
 
   return ok({ user, workspaces });
 });

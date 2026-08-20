@@ -35,7 +35,9 @@ import type {
   HandoverListItemDTO,
   NextActionDTO,
   PartnerDTO,
+  PlanCode,
   RequestDTO,
+  ShareScopes,
   SyncResultDTO,
   WorkspaceDTO,
 } from "@/types/api";
@@ -135,8 +137,23 @@ export const api = {
   /** 로그인 직후 호출. workspaces 가 비면 팀 생성 화면으로 보내세요. */
   me: () => get<{ user: { id: string; email: string; name: string | null; image: string | null }; workspaces: WorkspaceDTO[] }>("/api/me"),
 
-  createWorkspace: (body: { name: string; tagline?: string }) =>
+  createWorkspace: (body: { name: string; tagline?: string; timezone?: string; plan?: PlanCode }) =>
     post<WorkspaceDTO>("/api/workspaces", body),
+
+  /** 팀 설정 한 건 (타임존·요금제·공유 범위 포함) */
+  workspace: (workspaceId: string) => get<WorkspaceDTO>(`/api/workspaces/${workspaceId}`),
+
+  /** 팀 설정 변경. 보낸 필드만 바뀝니다. */
+  updateWorkspace: (
+    workspaceId: string,
+    body: {
+      name?: string;
+      tagline?: string | null;
+      timezone?: string;
+      plan?: PlanCode;
+      shareScopes?: ShareScopes;
+    },
+  ) => patch<WorkspaceDTO>(`/api/workspaces/${workspaceId}`, body),
 
   //파트너 연결
   getLink: (workspaceId: string) => get<PartnerDTO | null>(`/api/workspaces/${workspaceId}/link`),

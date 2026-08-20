@@ -18,14 +18,58 @@ import type {
   HandoverListItemDTO,
   JiraPreviewPayload,
   NextActionDTO,
+  PlanCode,
   PriorityBadge,
   RequestDTO,
+  ShareScopes,
+  WorkspaceDTO,
 } from "@/types/api";
 
 /**
  * Prisma 모델 → 프론트가 바로 그릴 수 있는 DTO.
  * 라벨/색/정렬키까지 서버에서 붙여 보낸다. 화면 3개에서 각자 매핑 테이블 만들다 어긋나는 걸 막으려고.
  */
+
+/** 공유 범위 기본값. DB 가 비어 있어도 화면이 항상 4개 토글을 그릴 수 있게 합니다. */
+export const DEFAULT_SHARE_SCOPES: ShareScopes = {
+  requirements: true,
+  references: false,
+  decisions: true,
+  notices: true,
+};
+
+/** Json 컬럼은 무엇이든 들어올 수 있으니 여기서 모양을 강제합니다. */
+export function toShareScopes(value: unknown): ShareScopes {
+  if (!value || typeof value !== "object") return DEFAULT_SHARE_SCOPES;
+  const raw = value as Record<string, unknown>;
+  return {
+    requirements: raw.requirements === undefined ? DEFAULT_SHARE_SCOPES.requirements : Boolean(raw.requirements),
+    references: raw.references === undefined ? DEFAULT_SHARE_SCOPES.references : Boolean(raw.references),
+    decisions: raw.decisions === undefined ? DEFAULT_SHARE_SCOPES.decisions : Boolean(raw.decisions),
+    notices: raw.notices === undefined ? DEFAULT_SHARE_SCOPES.notices : Boolean(raw.notices),
+  };
+}
+
+const PLAN_CODES: PlanCode[] = ["FREE", "PRO", "ENTERPRISE"];
+
+/** 워크스페이스 DTO. 만드는 곳이 4군데라 여기로 모읍니다. */
+export function toWorkspaceDTO(
+  workspace: Workspace,
+  role: "OWNER" | "MEMBER",
+  memberCount: number,
+): WorkspaceDTO {
+  return {
+    id: workspace.id,
+    name: workspace.name,
+    slug: workspace.slug,
+    tagline: workspace.tagline,
+    role,
+    memberCount,
+    timezone: workspace.timezone || "Asia/Seoul",
+    plan: (PLAN_CODES as string[]).includes(workspace.plan) ? (workspace.plan as PlanCode) : "FREE",
+    shareScopes: toShareScopes(workspace.shareScopes),
+  };
+}
 
 const PROVIDER_LABEL: Record<string, string> = {
   NOTION: "Notion",

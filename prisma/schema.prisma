@@ -83,6 +83,12 @@ model Workspace {
   slug      String   @unique
   // 대시보드 상단에 쓰는 한 줄 소개 ("결제팀 · 백엔드")
   tagline   String?
+  // 팀 기준 타임존. 인사말·마감 표시에 사용 (온보딩에서 선택)
+  timezone  String   @default("Asia/Seoul")
+  // 요금제. 해커톤 범위에서는 표시용이며 과금 로직은 없음
+  plan      String   @default("FREE")
+  // 파트너에게 공유할 항목 { requirements, references, decisions, notices }
+  shareScopes Json?
   createdAt DateTime @default(now())
 
   members       Membership[]

@@ -21,6 +21,16 @@ export type PriorityBadge = {
   reason: string | null;
 };
 
+export type PlanCode = "FREE" | "PRO" | "ENTERPRISE";
+
+/** 파트너에게 공유할 항목. 서버가 항상 4개 키를 채워서 내려줍니다. */
+export type ShareScopes = {
+  requirements: boolean;
+  references: boolean;
+  decisions: boolean;
+  notices: boolean;
+};
+
 export type WorkspaceDTO = {
   id: string;
   name: string;
@@ -28,6 +38,10 @@ export type WorkspaceDTO = {
   tagline: string | null;
   role: "OWNER" | "MEMBER";
   memberCount: number;
+  /** IANA 타임존 문자열. 기본 Asia/Seoul */
+  timezone: string;
+  plan: PlanCode;
+  shareScopes: ShareScopes;
 };
 
 export type PartnerDTO = {

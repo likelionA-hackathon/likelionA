@@ -19,15 +19,19 @@ function formatDate(value: string | null) {
   return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit" }).format(date);
 }
 
-function getGreeting() {
-  // TODO: Workspace.timezone이 API에 추가되면 Asia/Seoul 대신 해당 값을 사용합니다.
-  const hour = Number(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: "Asia/Seoul",
-      hour: "2-digit",
-      hourCycle: "h23",
-    }).format(new Date()),
-  );
+function getGreeting(timeZone: string) {
+  // 팀이 온보딩에서 고른 타임존 기준. 파트너와 시차가 있어도 각자 자기 시간으로 보입니다.
+  // 알 수 없는 타임존 문자열이 들어오면 Intl 이 예외를 던지므로 서울로 되돌립니다.
+  let hour: number;
+  try {
+    hour = Number(
+      new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", hourCycle: "h23" }).format(new Date()),
+    );
+  } catch {
+    hour = Number(
+      new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", hour: "2-digit", hourCycle: "h23" }).format(new Date()),
+    );
+  }
 
   if (hour < 12) return "좋은 아침입니다";
   if (hour < 18) return "좋은 오후입니다";
@@ -67,13 +71,18 @@ export function DashboardScreen({ workspaceId }: Props) {
   if (error || !dashboard) return <div className="py-24 text-center"><p className="text-sm font-bold">{error ?? "대시보드 정보가 없습니다."}</p><button type="button" onClick={() => void load()} className="mt-4 rounded-md bg-black px-5 py-2 text-xs font-bold text-white">다시 시도</button></div>;
 
   const { workspace, stats, badges, recentHandovers, todayActions } = dashboard;
-  const summaryCards = [["신규 인수인계", stats.newHandovers], ["다음 업무", stats.openActions], ["답할 요청", stats.openRequests]] as const;
+  // 카드마다 갈 곳을 붙입니다. 숫자만 보여주고 클릭이 안 되면 막다른 길이 됩니다.
+  const summaryCards = [
+    { label: "신규 인수인계", value: stats.newHandovers, href: `/w/${workspaceId}/handovers` },
+    { label: "다음 업무", value: stats.openActions, href: `/w/${workspaceId}/actions` },
+    { label: "답할 요청", value: stats.openRequests, href: `/w/${workspaceId}/requests` },
+  ];
   const notifications = [{ label: "새 인수인계", count: badges.unreadHandovers }, { label: "정보 요청", count: badges.incomingRequests }, { label: "공유 보드", count: badges.incomingBoardItems }].filter((item) => item.count > 0);
 
   return (
     <main className="pb-14">
       <header className="flex items-center justify-between border-b border-[#e5e5e5] pb-5">
-        <div><h1 className="text-lg font-extrabold tracking-[-0.03em]">{getGreeting()}, {workspace.name}</h1><p className="mt-1 text-[10px] font-semibold text-[#888]">오늘 확인할 인수인계와 다음 업무를 한눈에 확인하세요.</p></div>
+        <div><h1 className="text-lg font-extrabold tracking-[-0.03em]">{getGreeting(workspace.timezone)}, {workspace.name}</h1><p className="mt-1 text-[10px] font-semibold text-[#888]">오늘 확인할 인수인계와 다음 업무를 한눈에 확인하세요.</p></div>
         <button type="button" disabled={syncing} onClick={() => void syncNotion()} className="h-8 rounded-md border border-[#d9d9d9] px-4 text-[10px] font-bold hover:bg-[#f7f7f7] disabled:opacity-50">{syncing ? "동기화 중..." : "동기화"}</button>
       </header>
       {syncMessage ? <p className="mt-4 rounded-md bg-[#f0fdf4] px-4 py-2 text-[10px] text-[#166534]">{syncMessage}</p> : null}
@@ -85,7 +94,7 @@ export function DashboardScreen({ workspaceId }: Props) {
 
       <section aria-label="업무 요약" className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="grid flex-1 gap-3 sm:grid-cols-3">
-          {summaryCards.map(([label, value]) => <article key={label} className="min-h-20 rounded-md border border-[#dedede] p-3"><p className="text-[10px] text-[#666]">{label}</p><p className="mt-2 text-xl font-extrabold text-black">{value}</p></article>)}
+          {summaryCards.map(({ label, value, href }) => <Link key={label} href={href} className="min-h-20 rounded-md border border-[#dedede] p-3 hover:border-[#a78bfa] hover:bg-[#faf8ff]"><p className="text-[10px] text-[#666]">{label}</p><p className="mt-2 text-xl font-extrabold text-black">{value}</p></Link>)}
         </div>
         <Link href={`/w/${workspaceId}/board`} className="flex h-8 shrink-0 items-center rounded-sm border border-[#ddd] px-5 text-[10px] font-bold text-[#666] hover:bg-[#f7f7f7] hover:text-black">공유 보드 보기</Link>
       </section>

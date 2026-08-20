@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { toWorkspaceDTO } from "@/lib/serialize";
 import { handler, ok, readJson } from "@/lib/http";
 import { requireUser } from "@/lib/session";
 import { uniqueSlug } from "@/lib/workspace";
@@ -8,6 +9,9 @@ import type { WorkspaceDTO } from "@/types/api";
 const CreateBody = z.object({
   name: z.string().min(1, "팀 이름을 입력하세요.").max(50),
   tagline: z.string().max(100).optional(),
+  /** IANA 타임존. 온보딩에서 고른 값. */
+  timezone: z.string().max(64).optional(),
+  plan: z.enum(["FREE", "PRO", "ENTERPRISE"]).optional(),
 });
 
 /** GET /api/workspaces — 내 워크스페이스 목록 (= /api/me 의 workspaces 와 동일) */
@@ -18,14 +22,9 @@ export const GET = handler(async (req: Request) => {
     include: { workspace: { include: { _count: { select: { members: true } } } } },
   });
 
-  const workspaces: WorkspaceDTO[] = memberships.map((m) => ({
-    id: m.workspace.id,
-    name: m.workspace.name,
-    slug: m.workspace.slug,
-    tagline: m.workspace.tagline,
-    role: m.role,
-    memberCount: m.workspace._count.members,
-  }));
+  const workspaces: WorkspaceDTO[] = memberships.map((m) =>
+    toWorkspaceDTO(m.workspace, m.role, m.workspace._count.members),
+  );
 
   return ok(workspaces);
 });
@@ -43,6 +42,8 @@ export const POST = handler(async (req: Request) => {
     data: {
       name: body.name,
       tagline: body.tagline ?? null,
+      timezone: body.timezone ?? "Asia/Seoul",
+      plan: body.plan ?? "FREE",
       slug: await uniqueSlug(body.name),
       members: { create: { userId: user.id, role: "OWNER" } },
       // Jira 는 데모용 목데이터 연결을 기본으로 하나 깔아둔다 (연결관리 화면이 비지 않도록)
@@ -58,14 +59,5 @@ export const POST = handler(async (req: Request) => {
     include: { _count: { select: { members: true } } },
   });
 
-  const dto: WorkspaceDTO = {
-    id: workspace.id,
-    name: workspace.name,
-    slug: workspace.slug,
-    tagline: workspace.tagline,
-    role: "OWNER",
-    memberCount: workspace._count.members,
-  };
-
-  return ok(dto, 201);
+  return ok(toWorkspaceDTO(workspace, "OWNER", workspace._count.members), 201);
 });

@@ -70,8 +70,9 @@ export function OnboardingScreen({ initialInviteCode = "" }: { initialInviteCode
     setLoading(true);
     setError(null);
     try {
-      // TODO: DB 필드가 준비되면 timezone과 plan을 생성 API에 함께 전달합니다.
-      const currentWorkspaceId = workspaceId || (await api.createWorkspace({ name: name.trim() })).id;
+      const currentWorkspaceId =
+        workspaceId ||
+        (await api.createWorkspace({ name: name.trim(), timezone, plan })).id;
       setWorkspaceId(currentWorkspaceId);
       if (mode === "join") {
         setPartner(await api.acceptInvite({ inviteCode, workspaceId: currentWorkspaceId }));

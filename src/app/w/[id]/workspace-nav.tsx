@@ -9,6 +9,7 @@ const navigation = [
   { label: "인수인계", href: "/handovers" },
   { label: "다음 업무", href: "/actions" },
   { label: "공유 보드", href: "/board" },
+  { label: "정보 요청", href: "/requests" },
   { label: "AI 업무 정의", href: "/ai" },
   { label: "연결 관리", href: "/connections" },
 ];

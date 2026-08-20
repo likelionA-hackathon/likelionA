@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { handler, ok } from "@/lib/http";
 import { getMembershipRole, scope } from "@/lib/workspace";
-import { toConnectionDTO, toHandoverListDTO, toNextActionDTO } from "@/lib/serialize";
+import { toConnectionDTO, toHandoverListDTO, toNextActionDTO, toWorkspaceDTO } from "@/lib/serialize";
 import type { DashboardDTO } from "@/types/api";
 
 type Ctx = { params: Promise<{ workspaceId: string }> };
@@ -56,14 +56,7 @@ export const GET = handler(async (req: Request, ctx: Ctx) => {
   const role = (await getMembershipRole(user.id, workspaceId)) ?? "MEMBER";
 
   const dto: DashboardDTO = {
-    workspace: {
-      id: workspace.id,
-      name: workspace.name,
-      slug: workspace.slug,
-      tagline: workspace.tagline,
-      role,
-      memberCount: workspace._count.members,
-    },
+    workspace: toWorkspaceDTO(workspace, role, workspace._count.members),
     partner: link
       ? {
           linkId: link.id,
