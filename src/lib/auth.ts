@@ -35,16 +35,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       name: "게스트",
       credentials: {},
       async authorize() {
-        if (process.env.DEMO_GUEST_LOGIN !== "true") return null;
+        if (process.env.DEMO_GUEST_LOGIN !== "true") {
+          console.error("[guest] DEMO_GUEST_LOGIN 이 true 가 아닙니다.");
+          return null;
+        }
 
         const email = process.env.DEMO_GUEST_EMAIL || "guest@pmconnector.dev";
-        const user = await prisma.user.upsert({
-          where: { email },
-          create: { email, name: "게스트" },
-          update: {},
-        });
-
-        return { id: user.id, email: user.email, name: user.name };
+        try {
+          const user = await prisma.user.upsert({
+            where: { email },
+            create: { email, name: "게스트" },
+            update: {},
+          });
+          return { id: user.id, email: user.email, name: user.name };
+        } catch (error) {
+          // 여기서 던지면 Auth.js 가 전부 "Configuration" 으로 뭉개서
+          // 화면만 보고는 원인을 알 수 없습니다. 로그에 실제 원인을 남깁니다.
+          console.error("[guest] 게스트 계정 생성 실패 (DATABASE_URL 확인):", error);
+          return null;
+        }
       },
     }),
   ],
@@ -73,7 +82,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // 데모 워크스페이스 자동 참여는 게스트에게만 적용합니다.
       // 실제 Google 로그인은 빈 상태에서 시작해 온보딩(팀 생성)을 거칩니다.
       if (account?.provider === "guest") {
-        await joinDemoWorkspace(dbUser.id);
+        await joinDemoWorkspace(dbUser.id).catch((error) => {
+          console.error("[guest] 데모 팀 참여 실패:", error);
+        });
       }
 
       return true;
