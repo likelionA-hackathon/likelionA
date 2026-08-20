@@ -1,227 +1,156 @@
 # PM Connector
 
-> https://github.com/likelionA-hackathon/likelionA
-> 처음 오셨으면 **[`docs/ONBOARDING.md`](docs/ONBOARDING.md)** 부터 읽으세요.
-> 깃이 처음이면 **[`docs/GIT.md`](docs/GIT.md)** 도 같이.
+**국제 협업의 장벽이던 시차를, 24시간 이어지는 업무 흐름으로.**
 
-팀 간 인수인계 허브. Notion 에 흩어진 인수인계 문서를 AI 가 정리하고,
-파트너 팀과 다음 업무·공유보드로 이어줍니다.
+한 팀이 퇴근하며 남긴 업무 문서를 AI가 읽고, 다음 팀이 곧바로 이어받을 수 있는 인수인계로 정리합니다.
+요약에서 멈추지 않고 **무엇이 중요한지**와 **다음에 무엇을 해야 하는지**까지 연결합니다.
 
-- 프레임워크: Next.js 16 (App Router) · TypeScript
-- DB: PostgreSQL (Neon/Supabase) + Prisma
-- 인증: NextAuth v5 (Google OAuth)
-- 연동: Notion REST (실연동) · Jira (목데이터)
-- AI: Gemini(무료 티어) 또는 Claude — `.env` 로 전환
+**🔗 [likelion-a-kappa.vercel.app](https://likelion-a-kappa.vercel.app)**
+로그인 화면의 **`로그인 없이 테스트해보기`** 버튼으로 가입 없이 전체 기능을 둘러볼 수 있습니다.
+
+2026 멋쟁이사자처럼 해커톤 · 팀 likelionA
 
 ---
 
-## 30초 셋업
+## 어떤 문제를 푸나
+
+국경을 넘어 협업할 때 가장 큰 장벽은 언어도 문화도 아닌 **시차**입니다.
+Capterra의 2024 Collaboration and Productivity Survey(약 6,500명)에서 국제 협업 구성원이 꼽은 1순위 장벽은
+불규칙한 근무시간·시차(44%)로, 언어 장벽(42%)과 문화적 오해(33%)보다 높았습니다.
+Harvard Business School 연구(Chauvin et al., 2020)에 따르면 시차가 1시간 늘어날 때
+조직 간 커뮤니케이션은 9.2%, 예정된 회의·통화는 10.7% 감소합니다.
+
+지금까지 이 공백은 **사람**이 메웠습니다. 협업 담당자를 두고 실무진-담당자-실무진 구조로 일하는 방식은
+정보 전달 단계를 늘리고, 인건비를 만들고, 실무자 사이에는 여전히 소통 공백을 남깁니다.
+그리고 담당자를 둘 여력이 없는 1인 기업·프리랜서·초기 스타트업에게는 애초에 선택지가 없었습니다.
+
+PM Connector는 그 자리를 대신합니다. **각자의 업무 환경은 그대로 둔 채, 필요한 정보만 연결합니다.**
+
+---
+
+## 핵심 기능
+
+### 1. AI 스마트 인수인계
+Notion에 남긴 업무 문서를 AI가 읽어 **요약 · 변경사항 · 영향 범위 · 추가 확인이 필요한 항목**으로 재구성합니다.
+다음 팀은 문서를 처음부터 읽지 않고 맥락만 넘겨받습니다.
+
+### 2. 긴급도 정규화
+조직마다 `Critical`, `P1`, `긴급`처럼 표기가 달라서, 우선순위는 그대로 전달되면 의미를 잃습니다.
+공통 기준으로 재정의하고 **원문의 어떤 값을 무엇을 근거로 판단했는지 함께** 남깁니다.
+규칙으로 판별되는 표기는 규칙이 처리하고, 그렇지 않은 표현만 AI가 보완합니다.
+
+### 3. 다음 업무 자동 생성
+인수인계에서 실행 항목을 뽑아 **담당자 · 마감 · 우선순위 · 상태**가 채워진 초안을 만듭니다.
+사람이 한 번이라도 수정하면 `AI 초안` 표시가 사라져, 어디까지가 AI의 제안이고 어디부터 팀의 결정인지 구분됩니다.
+
+### 4. 공유 보드와 보안 필터링
+조직 내부 보드와 파트너 공유 보드를 분리하고, 공유 범위는 각 조직이 직접 설정합니다.
+상대 팀에 전달되기 전 **어떤 요청이 나가는지 그대로 확인**할 수 있습니다.
+
+### 5. 정보 요청
+인수인계만으로 판단이 어려우면 상대 팀에 되묻고, 질문과 답변이 해당 인수인계에 함께 기록됩니다.
+다음 담당자가 같은 것을 다시 묻지 않습니다.
+
+### 6. 판단 근거 열람
+AI가 정리한 결과는 언제든 **원문과 나란히** 확인할 수 있고, 필요하면 다시 생성할 수 있습니다.
+AI의 결론을 그대로 신뢰하도록 요구하지 않습니다.
+
+---
+
+## 화면
+
+| 메뉴 | 하는 일 |
+|---|---|
+| 대시보드 | 팀 시간대 기준으로 오늘 확인할 인수인계·업무·요청을 한눈에 |
+| 인수인계 | 도착한 문서 목록. 상태·긴급도 필터, 제목·요약 검색 |
+| 다음 업무 | AI 초안과 직접 추가한 업무를 상태별로 관리 |
+| 공유 보드 | 파트너 팀에 전달할 업무 선택 · 전송될 요청 미리보기 |
+| 정보 요청 | 받은 질문에 답하고, 보낸 질문의 답을 확인 |
+| AI 업무 정의 | AI 산출물과 원문 대조, 다음 업무 생성·재생성 |
+| 연결 관리 | Notion·Jira 연결, 공유 범위 설정, 파트너 초대 |
+
+---
+
+## 동작 방식
+
+```
+Notion 문서
+    │
+    ▼
+[동기화]  문서를 가져온다 (페이지 주소만 줘도 내부 DB를 자동 탐색)
+    │
+    ▼
+[AI 정리]  요약 · 변경사항 · 영향 범위 · 추가 확인 항목
+    │
+    ▼
+[긴급도 정규화]  규칙 매칭 → 판별 안 되면 AI 보완 → 판단 근거 기록
+    │
+    ▼
+[다음 업무 생성]  담당자 · 마감 · 우선순위가 채워진 실행 항목 초안
+    │
+    ▼
+[공유 보드]  전달할 항목 선택 → 전송될 요청 확인 → 파트너 팀으로
+```
+
+---
+
+## 기술 스택
+
+| 영역 | 선택 |
+|---|---|
+| 프레임워크 | Next.js 16 (App Router) · React 19 · TypeScript |
+| 스타일 | Tailwind CSS 4 |
+| DB · ORM | Neon PostgreSQL · Prisma 6 |
+| 인증 | NextAuth v5 · JWT 세션 · Google OAuth + 게스트 로그인 |
+| 검증 | Zod — 모든 API 입력 스키마 검증 |
+| AI | OpenAI · **프로바이더 추상화 계층으로 Gemini·Claude 교체 가능** |
+| 외부 연동 | Notion REST (실연동) · Jira Cloud REST v3 + ADF (요청 규격 생성) |
+| 배포 | Vercel (main 푸시 시 자동 배포) |
+
+### 설계에서 신경 쓴 것
+
+- **모델 종속성 제거** — LLM 호출을 `src/lib/llm.ts` 한 곳에 격리해, 환경변수만 바꾸면 다른 모델로 전환됩니다.
+- **응답 형태 통일** — 모든 API가 `{ ok, data }` / `{ ok, error }` 한 가지 모양입니다.
+  라벨·색·정렬 순서까지 서버가 붙여 내려주므로 화면마다 매핑 테이블을 만들 필요가 없습니다.
+- **Notion 입력 관대하게** — 사용자가 표를 복사하면 실제로는 부모 페이지 ID가 넘어옵니다.
+  이 경우 하위 블록을 탐색해 인라인 데이터베이스를 자동으로 찾습니다.
+- **전 구간 자동 검사** — `npm run smoke` 하나로 엔드포인트 51개 케이스를 검증합니다.
+
+---
+
+## 빠르게 실행하기
 
 ```bash
 npm install
-cp .env.example .env      # Windows PowerShell: copy .env.example .env
-# .env 에 DATABASE_URL 만 채우면 화면 개발은 바로 됩니다
+cp .env.example .env    # DATABASE_URL / DIRECT_URL 만 채우면 화면은 바로 뜹니다
 npx prisma db push
 npm run db:seed
 npm run dev
 ```
 
-`http://localhost:3000/api/me` 가 JSON 을 뱉으면 성공입니다.
+`http://localhost:3000` 접속. 세팅이 꼬이면 `npm run doctor` 가 원인을 짚어줍니다.
 
-### Neon DB 만들기 (3분) — 한 명만 하고 팀에 공유
-
-1. https://console.neon.tech → GitHub 로그인
-2. **Create project** → 리전은 `Asia Pacific (Singapore)` (한국에서 가장 가까움)
-3. 프로젝트 화면에서 **Connect** 버튼 → 다이얼로그가 뜸
-4. **문자열을 두 개** 복사합니다. 같은 다이얼로그에서 체크박스 하나만 바꾸면 됩니다.
-
-   | .env 변수 | Connection pooling | 호스트 모양 | 누가 씀 |
-   |---|---|---|---|
-   | `DATABASE_URL` | **체크** | `ep-xxxx-`**`pooler`**`.…` | 앱 런타임 |
-   | `DIRECT_URL` | 체크 해제 | `ep-xxxx.…` | `prisma db push`, seed |
-
-5. 두 값을 `.env` 에 넣고, **팀방에 그대로 공유**합니다.
-   각자 만들면 워크스페이스 id 가 달라져서 화면 붙일 때 데이터가 안 맞습니다.
-
-```bash
-npx prisma db push   # 스키마를 DB 에 생성
-npm run db:seed      # 데모 데이터 심기
-npm run dev
-```
-
-> **알아둘 것 — 5분 쉬면 DB 가 잠듭니다.**
-> Neon 무료 플랜은 5분 유휴 후 컴퓨트를 0으로 내립니다(끌 수 없음).
-> 그래서 한동안 안 쓰다가 첫 요청을 보내면 1초 정도 걸립니다. **버그가 아닙니다.**
-> **데모 직전에 아무 API 나 한 번 찔러서 깨워두세요.** 무대에서 첫 클릭이 느리면 흐름이 끊깁니다.
->
-> 무료 플랜: 프로젝트당 스토리지 0.5GB · 월 100 CU-hours. 우리 규모로는 남습니다.
-
-## 팀원별 시작 지점
-
-| | 담당 | 먼저 읽을 것 |
-|---|---|---|
-| 백지우 | AI · 백엔드 · 연동 | `src/lib/*`, `src/app/api/**` |
-| 전철우 | 온보딩 · 대시보드 · 연결관리 | `docs/API.md` 1~3장 |
-| 김건희 | 인수인계 상세 · 다음업무 · 공유보드 | `docs/API.md` 4~7장 |
-
-**API 명세: [`docs/API.md`](docs/API.md)** · 타입: `src/types/api.ts`
+Notion·AI·Google OAuth 연결과 환경변수 전체 설명은 **[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)** 에 있습니다.
 
 ---
 
-## 로그인 없이 개발하기
+## 문서
 
-`.env` 의 `DEV_AUTH_BYPASS="true"` 가 켜져 있으면 로그인 없이 API 가 열립니다.
-누구로 부를지는 요청 헤더로:
-
-```bash
-curl -H "x-baton-user: jiwoo@baton.dev" http://localhost:3000/api/me
-```
-
-| 헤더 값 | 팀 | 성격 |
-|---|---|---|
-| `jiwoo@baton.dev` | 정산팀 | 인수인계 **받는** 쪽. 화면 대부분 이쪽 |
-| `cheolwoo@baton.dev` | 페이팀 | **넘기는** 쪽 |
-
-NextAuth 로그인이 붙은 뒤에는 세션이 우선이라 이 헤더는 무시됩니다.
-**배포 전에 `DEV_AUTH_BYPASS` 를 반드시 끄세요.**
-
----
-
-## Notion 붙이기 (백지우)
-
-1. https://www.notion.so/my-integrations → **New integration** → Internal Integration Token 복사
-2. 인수인계용 Notion **데이터베이스** 페이지 → 우상단 `⋯` → **연결** → 방금 만든 integration 초대
-   - 이걸 빼먹으면 `Could not find database` 가 납니다. 제일 흔한 실수입니다.
-3. 데이터베이스 URL 의 32자리 해시가 `databaseId`
-   `https://notion.so/workspace/`**`a1b2c3...`**`?v=...`
-4. 연결 등록:
-
-```bash
-curl -X POST http://localhost:3000/api/workspaces/<워크스페이스ID>/connections \
-  -H "Content-Type: application/json" -H "x-baton-user: cheolwoo@baton.dev" \
-  -d '{"provider":"NOTION","token":"ntn_...","databaseId":"a1b2c3..."}'
-```
-
-5. 동기화 (AI 요약까지 한 번에):
-
-```bash
-curl -X POST http://localhost:3000/api/workspaces/<워크스페이스ID>/notion/sync \
-  -H "Content-Type: application/json" -H "x-baton-user: cheolwoo@baton.dev" \
-  -d '{"limit":3}'
-```
-
-### Notion DB 에 넣어두면 좋은 property
-
-| 이름 | 타입 | 쓰임 |
-|---|---|---|
-| 제목 | Title | 인수인계 제목 |
-| 우선순위 | Select | `Critical` / `P1` / `보통` / `backlog` 등 아무 표기나 — 4단계로 정규화됨 |
-| 담당자 | Person 또는 Text | 작성자 표시 |
-
-property 이름은 `우선순위/priority/중요도/긴급도`, `담당자/작성자/assignee/owner` 중 아무거나 인식합니다.
-
----
-
-## AI 붙이기 (백지우) — 무료로
-
-`GEMINI_API_KEY` 하나만 넣으면 됩니다. **카드 등록 불필요.**
-
-1. https://aistudio.google.com/apikey → **Create API key**
-2. `.env` 의 `GEMINI_API_KEY` 에 붙여넣기
-
-```
-GEMINI_API_KEY="AIza..."
-GEMINI_MODEL="gemini-3.5-flash"
-```
-
-키가 둘 다 있으면 `LLM_PROVIDER="gemini"` 또는 `"anthropic"` 로 고릅니다.
-비워두면 있는 키를 자동으로 씁니다.
-
-> 무료 티어는 입력 내용이 Google 제품 개선에 사용됩니다.
-> 우리 데모 데이터는 전부 가짜라 상관없지만, 실제 회사 문서로는 쓰지 마세요.
-
-품질이 아쉬우면 `src/lib/claude.ts` 의 `SUMMARY_SYSTEM` 만 고치면 됩니다.
-모델 전환은 `src/lib/llm.ts` 한 파일에 격리되어 있습니다.
-
-## Google OAuth 붙이기 (전철우)
-
-1. https://console.cloud.google.com 에서 프로젝트를 만들고 **Google Auth Platform** 설정
-2. Branding 에 앱 이름·지원 이메일을 입력하고 Audience 를 선택
-   - External + Testing 이면 로그인할 Google 계정을 Test users 에 추가
-3. Clients 에서 **Web application** OAuth 클라이언트 생성
-4. Authorized JavaScript origins 에 `http://localhost:3000` 등록
-5. Authorized redirect URIs 에 `http://localhost:3000/api/auth/callback/google` 등록
-   - 스킴·호스트·포트·경로가 한 글자라도 다르면 `redirect_uri_mismatch` 가 발생함
-6. `.env` 에 `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_SECRET` 채우기
-   - `AUTH_SECRET` 은 `npx auth secret` 으로 생성
-   - OAuth 테스트 때는 `DEV_AUTH_BYPASS="false"` 로 변경
-7. 서버를 재시작하고 `http://localhost:3000/login` 에서 로그인
-
-배포할 때는 Google Cloud 에 배포 주소도 별도로 등록합니다.
-
-```text
-Authorized JavaScript origin: https://your-domain.example
-Authorized redirect URI:      https://your-domain.example/api/auth/callback/google
-```
-
-```env
-AUTH_URL="https://your-domain.example"
-DEV_AUTH_BYPASS="false"
-```
-
-Client Secret 은 Git 에 커밋하지 말고 배포 서비스의 환경변수에만 저장하세요.
-
----
-
-## 자주 쓰는 명령
-
-```bash
-npm run dev        # 개발 서버
-npm run db:push    # 스키마 변경을 DB 에 반영 (마이그레이션 파일 없이)
-npm run db:seed    # 데모 데이터 다시 심기
-npm run db:reset   # DB 날리고 처음부터 (데이터 다 사라짐, 주의)
-npm run db:studio  # Prisma Studio 로 데이터 눈으로 보기
-```
-
-스키마(`prisma/schema.prisma`)를 고쳤으면 **`npm run db:push` 를 꼭 돌리세요.**
-안 그러면 타입은 맞는데 런타임에 컬럼이 없다고 터집니다.
-
----
-
-## 데모 시나리오
-
-```
-페이팀(결제 백엔드)  ──파트너 연결──  정산팀(정산/운영)
-```
-
-1. 페이팀이 Notion 에 "PG 교체 1차 이관 완료" 인수인계를 씀
-2. PM Connector 가 동기화 → AI 가 요약 / 변경사항 / 업무맥락 / 추가확인 으로 쪼갬
-   - "Critical" 표기를 **긴급** 배지로 정규화
-3. 정산팀 대시보드에 **확인 전 2건 · 긴급 1건** 배지
-4. 상세에서 "확인" → AI 가 **다음 업무 초안 3~6개** 생성
-5. 그중 결제팀이 해야 할 일을 **공유보드로 전달** (Jira 이슈 미리보기까지)
-6. 애매한 부분은 **정보요청** → 페이팀 대시보드에 빨간 배지
-
----
-
-## 뭔가 안 될 때
-
-```bash
-npm run doctor
-```
-
-세팅을 순서대로 진단하고, 실패한 항목마다 뭘 해야 하는지 알려줍니다.
-
-## 트러블슈팅
-
-| 증상 | 원인 |
+| 문서 | 내용 |
 |---|---|
-| `PrismaClientInitializationError` | `DATABASE_URL` 없음 또는 `npx prisma db push` 안 함 |
-| `prepared statement "s0" already exists` | 풀러 이슈. `DATABASE_URL` 뒤에 `&pgbouncer=true` 붙이기 |
-| 첫 요청만 1초 넘게 걸림 | Neon 이 자다 깨는 중. 정상. 두 번째부터 빠릅니다 |
-| `db push` 가 멈춘 채 안 끝남 | `DIRECT_URL` 에 `-pooler` 가 붙은 걸 넣었을 가능성. 빼야 합니다 |
-| `Cannot find module '.prisma/client'` | `npx prisma generate` (또는 `npm install` 다시) |
-| API 가 401 | `DEV_AUTH_BYPASS="true"` 인지, `x-baton-user` 이메일이 seed 에 있는 값인지 |
-| API 가 403 `NOT_A_MEMBER` | 그 사용자가 그 워크스페이스 멤버가 아님. `/api/me` 로 내 워크스페이스 id 확인 |
-| Notion `Could not find database` | integration 을 해당 DB 페이지에 초대 안 함 |
-| `AI_DISABLED` | `.env` 에 `ANTHROPIC_API_KEY` 없음 |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | 로컬 실행 · Notion/AI/OAuth 연결 · 트러블슈팅 |
+| [`docs/API.md`](docs/API.md) · [`docs/API-SPEC.md`](docs/API-SPEC.md) | 엔드포인트 18개 명세 |
+| [`docs/ONBOARDING.md`](docs/ONBOARDING.md) | 팀원용 시작 가이드 |
+| [`docs/NOTION_SETUP.md`](docs/NOTION_SETUP.md) | Notion 데이터베이스 구조 |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | 배포 · 제출 전 체크리스트 |
+| [`docs/서비스기획안.md`](docs/서비스기획안.md) | 서비스 기획안 |
+
+---
+
+## 팀
+
+| 역할 | 담당 |
+|---|---|
+| 기획 · 디자인 | 김건희, 정예담 |
+| 프론트엔드 | 김건희, 백지우, 전철우 |
+| 백엔드 · AI · 연동 · 배포 | 백지우 |
