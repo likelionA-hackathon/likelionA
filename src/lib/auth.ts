@@ -57,6 +57,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  /**
+   * Vercel 배포에서 UntrustedHost 로 인증이 전부 막혔습니다.
+   * Auth.js v5 는 Host 헤더를 신뢰할지 명시해야 하는데, 자동 감지가 안 걸리는 경우가 있습니다.
+   * 우리 도메인으로만 트래픽이 들어오므로 켜도 됩니다. (프록시 뒤에서 Host 를 위조당할 구조가 아님)
+   */
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
